@@ -25,55 +25,134 @@ gh pr view --json number -q .number
 
 ### Get PR Details
 
-```bash
-# Full PR details
-gh pr view --json repository,number,title,body
+**IMPORTANT**: Use only tested, available fields. The `repository` field does NOT exist in `gh pr view` output.
 
-# Extract specific fields
-gh pr view --json repository,number -q '{owner: .repository.owner.login, repo: .repository.name, number: .number}'
+**Safe Fields** (always available):
+- `number`, `title`, `url`, `state`
+- `headRefName`, `baseRefName` (branch names)
+- `headRepositoryOwner`, `author` (user objects)
+
+```bash
+# ✅ CORRECT: Use headRepositoryOwner (not repository)
+gh pr view --json number,title,url,headRefName,headRepositoryOwner \
+  --jq '{
+    owner: .headRepositoryOwner.login,
+    repo: "your-repo",
+    number: .number,
+    title: .title,
+    branch: .headRefName,
+    url: .url
+  }'
+
+# ❌ WRONG: repository field doesn't exist
+gh pr view --json repository  # ERROR: Unknown JSON field
+
+# ✅ List all available fields
+gh pr view --json-fields
 ```
 
 ## Review Comments
 
-### Fetch All Comments
+### Two Types of Qodo Comments
+
+**CRITICAL**: Qodo posts comments in **two separate locations**. You must fetch **both** to get all issues.
+
+1. **General Comments** - Summary on PR conversation (via issues API)
+2. **Inline Comments** - Specific code line comments (via pulls API)
+
+### Fetch General Comments (Summary)
+
+General comments contain **all issues** in a single comment with multiple nested `<details>` sections.
 
 ```bash
-# All review comments
-gh api repos/{owner}/{repo}/pulls/{pr_number}/comments
-
-# With jq filtering
-gh api repos/{owner}/{repo}/pulls/{pr_number}/comments | jq '.'
-```
-
-### Fetch Unresolved Comments
-
-```bash
-gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
-  --jq '[.[] | select(.resolved == false)]'
-```
-
-### Fetch Qodo Comments Only
-
-**Important**: Qodo uses the bot username `qodo-code-review[bot]` (exact match required).
-
-```bash
-# Fetch Qodo comments (exact username match)
-gh api repos/{owner}/{repo}/pulls/{pr_number}/comments | jq '[.[] |
-  select(.user.login == "qodo-code-review[bot]") |
-  select(
-    (.in_reply_to_id == null) or
-    (.resolved == false)
-  )
+# Fetch general PR comments from Qodo
+gh api repos/{owner}/{repo}/issues/{pr_number}/comments --jq '[.[] |
+  select(.user.login == "qodo-code-review[bot]" or .user.login == "qodo-merge[bot]")
 ]'
+
+# Example output structure
+# {
+#   "id": 123456789,
+#   "body": "<h3>Code Review by Qodo</h3>\n<details><summary>1. Issue Title...</summary>...",
+#   "user": {"login": "qodo-code-review[bot]"}
+# }
 ```
 
-### Parse Qodo HTML Comments
+**IMPORTANT**: Direct comment access by ID returns 404. Always use array filtering:
+```bash
+# ❌ FAILS with 404
+gh api repos/{owner}/{repo}/issues/comments/{comment_id}
 
-Qodo comments contain HTML. Extract key information:
+# ✅ WORKS - use array filtering
+gh api repos/{owner}/{repo}/issues/{pr_number}/comments --jq '[.[] | select(.id == {comment_id})][0]'
+```
+
+### Fetch Inline Comments
+
+Inline comments are posted on specific code lines.
 
 ```bash
-# Extract clean text from HTML comment
-COMMENT_BODY=$(gh api repos/{owner}/{repo}/pulls/comments/{comment_id} --jq '.body')
+# Fetch inline review comments from Qodo
+gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --jq '[.[] |
+  select(.user.login == "qodo-code-review[bot]" or .user.login == "qodo-merge[bot]") |
+  select(.in_reply_to_id == null)
+]'
+
+# Example output includes metadata
+# {
+#   "id": 987654321,
+#   "path": "src/services/example.py",
+#   "line": 42,
+#   "body": "...",
+#   "user": {"login": "qodo-code-review[bot]"}
+# }
+```
+
+### Parse General Comments (Multiple Issues)
+
+General comments contain multiple issues in nested `<details>` blocks:
+
+```bash
+# Full general comment body
+COMMENT_BODY=$(gh api repos/{owner}/{repo}/issues/{pr_number}/comments --jq '[.[] |
+  select(.user.login == "qodo-code-review[bot]")][0].body')
+
+# Structure:
+# <h3>Code Review by Qodo</h3>
+# <code>🐞 Bugs (0)</code> <code>📘 Rule violations (2)</code>
+# <details>
+#   <summary>1. Issue Title <code>📘 Rule violation</code></summary>
+#   <details><summary>Description</summary>...</details>
+#   <details><summary>Code</summary>...</details>
+#   <details><summary>Evidence</summary>...</details>
+#   <details><summary>Agent prompt</summary>...</details>
+# </details>
+# <details>
+#   <summary>2. Another Issue...</summary>
+#   ...
+# </details>
+```
+
+**Extract all issues from general comment:**
+1. Split on outer `<details>` tags to separate issues
+2. Each issue has numbered summary: `<summary>1. Title <code>📘 Rule violation</code></summary>`
+3. Parse file/line from GitHub links: `[app/file.py[R363-380]](https://github.com/...)`
+4. Extract Agent Prompt from nested `<details><summary>Agent prompt</summary>`
+
+### Parse Inline Comments (Single Issue)
+
+Simpler structure with metadata:
+
+```bash
+# Extract clean text from HTML comment (use array filtering, not direct ID)
+COMMENT_BODY=$(gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --jq '[.[] |
+  select(.id == {comment_id})][0].body')
+
+# Metadata available directly
+PATH=$(gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --jq '[.[] |
+  select(.id == {comment_id})][0].path')
+LINE=$(gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --jq '[.[] |
+  select(.id == {comment_id})][0].line')
 
 # Extract Agent Prompt section (contains fix instructions)
 AGENT_PROMPT=$(echo "$COMMENT_BODY" | grep -A 20 '<summary>Agent Prompt</summary>' | sed 's/<[^>]*>//g')
@@ -122,12 +201,15 @@ gh api repos/{owner}/{repo}/pulls/comments/{comment_id} \
 
 ## Posting Replies
 
-### Post Reply to Comment
+### Two Reply Endpoints
 
-**IMPORTANT**: Use `--input -` (not `-f`) for proper JSON handling.
+Different endpoints for general vs inline comments:
 
+**Reply to General Comment (on PR conversation):**
 ```bash
-gh api repos/{owner}/{repo}/pulls/comments/{comment_id}/replies \
+# Uses issues comment API
+gh api repos/{owner}/{repo}/issues/comments/{comment_id}/replies \
+  --method POST \
   --input - <<EOF
 {
   "body": "Reply text here"
@@ -135,11 +217,40 @@ gh api repos/{owner}/{repo}/pulls/comments/{comment_id}/replies \
 EOF
 ```
 
+**Reply to Inline Comment (on code line):**
+```bash
+# Uses pull request review comment API
+gh api repos/{owner}/{repo}/pulls/comments/{comment_id}/replies \
+  --method POST \
+  --input - <<EOF
+{
+  "body": "Reply text here"
+}
+EOF
+```
+
+**IMPORTANT**:
+- Use correct endpoint based on comment type
+- Use `--input -` (not `-f`) for proper JSON handling
+- For issues in both locations, post replies to both
+
 ### Post with Variables
 
 ```bash
 COMMIT_HASH=$(git rev-parse --short HEAD)
-gh api repos/{owner}/{repo}/pulls/comments/{comment_id}/replies \
+
+# Reply to inline comment
+gh api repos/{owner}/{repo}/pulls/comments/{inline_comment_id}/replies \
+  --method POST \
+  --input - <<EOF
+{
+  "body": "Fixed in ${COMMIT_HASH}: Description here"
+}
+EOF
+
+# Also reply to same issue in general comment
+gh api repos/{owner}/{repo}/issues/comments/{general_comment_id}/replies \
+  --method POST \
   --input - <<EOF
 {
   "body": "Fixed in ${COMMIT_HASH}: Description here"
@@ -188,23 +299,29 @@ gh api repos/{owner}/{repo}/pulls/comments/{comment_id} \
 
 ### Get Check Status
 
+**IMPORTANT**: Avoid `!=` in jq (shell escaping issues). Use positive matching or `.state` field instead.
+
 ```bash
 # All checks
 gh pr checks
 
-# JSON format
-gh pr checks --json name,conclusion,detailsUrl
+# JSON format (use 'state' not 'conclusion')
+gh pr checks --json name,state
 
-# Failing checks only
-gh pr checks --json name,conclusion \
-  --jq '.[] | select(.conclusion != "success")'
+# ✅ CORRECT: Failing checks (positive matching)
+gh pr checks --json name,state \
+  --jq '[.[] | select(.state == "FAILURE" or .state == "ERROR")]'
+
+# ❌ WRONG: != gets escaped as \!=
+gh pr checks --jq 'select(.state != "SUCCESS")'  # Shell escaping breaks jq
 ```
 
 ### Count Failing Checks
 
 ```bash
-gh pr checks --json conclusion \
-  --jq '[.[] | select(.conclusion != "success")] | length'
+# Count failures and errors
+gh pr checks --json state \
+  --jq '[.[] | select(.state == "FAILURE" or .state == "ERROR")] | length'
 ```
 
 ## Verification
@@ -344,3 +461,190 @@ gh api graphql -f query='
   }
 ' --jq '.data.viewer.login'
 ```
+
+## Error Handling & Best Practices
+
+### Common Errors and Solutions
+
+#### 1. Unknown JSON Field Errors
+
+**Error:**
+```
+Unknown JSON field: "repository"
+```
+
+**Cause:** Using field names that don't exist in the API response
+
+**Solution:**
+```bash
+# ❌ WRONG: Assuming field exists
+gh pr view --json repository
+
+# ✅ CORRECT: Check available fields first
+gh pr view --json-fields
+
+# ✅ CORRECT: Use only tested fields
+gh pr view --json number,title,headRepositoryOwner
+```
+
+**Safe Fields Reference:**
+- PR: `number`, `title`, `url`, `state`, `headRefName`, `baseRefName`, `headRepositoryOwner`, `author`
+- Checks: `name`, `state` (not `conclusion`)
+- Comments: `id`, `body`, `path`, `line`, `user`, `created_at`
+
+#### 2. Parallel Command Failures
+
+**Error:**
+```
+Error: Sibling tool call errored
+```
+
+**Cause:** When running parallel Bash commands, if ONE fails, ALL siblings abort
+
+**Solution:**
+```bash
+# ❌ BAD: Mix risky and safe commands in parallel
+gh pr view --json badfield &  # This fails
+gh api repos/owner/repo/pulls/101/comments &  # Gets aborted
+wait
+
+# ✅ GOOD: Validate first, then parallelize
+# Step 1: Validate critical data (sequential)
+PR_NUM=$(gh pr view --json number -q .number) || exit 1
+OWNER="your-org"
+REPO="your-repo"
+
+# Step 2: Fetch data (parallel - now safe)
+gh api repos/$OWNER/$REPO/issues/$PR_NUM/comments &
+gh api repos/$OWNER/$REPO/pulls/$PR_NUM/comments &
+wait
+```
+
+**Best Practice:** Group commands by risk level
+- **Phase 1:** Validate (sequential, may fail)
+- **Phase 2:** Fetch (parallel, unlikely to fail)
+- **Phase 3:** Process (sequential or parallel as needed)
+
+#### 3. Shell Escaping in jq
+
+**Error:**
+```
+unexpected token "\\"
+```
+
+**Cause:** Shell escapes special characters like `!=` as `\!=`, breaking jq syntax
+
+**Solution:**
+```bash
+# ❌ WRONG: != operator
+jq 'select(.state != "SUCCESS")'  # Becomes select(.state \!= "SUCCESS")
+
+# ✅ CORRECT: Positive matching
+jq 'select(.state == "FAILURE" or .state == "ERROR")'
+
+# ✅ CORRECT: Regex matching
+jq 'select(.state | test("FAIL|ERROR"))'
+
+# ✅ CORRECT: Array membership
+jq 'select([.state] | inside(["FAILURE", "ERROR"]))'
+```
+
+**Problematic Characters:**
+- `!=` → Use `==` with `or` instead
+- `!` → Use positive logic
+- `>`, `<` → Quote carefully or use functions
+
+#### 4. API 404 Errors with Direct Comment Access
+
+**Error:**
+```
+{"message": "Not Found", "status": "404"}
+```
+
+**Cause:** GitHub API doesn't support direct comment ID access for some endpoints
+
+**Solution:**
+```bash
+# ❌ WRONG: Direct comment access
+gh api repos/owner/repo/issues/comments/123456
+
+# ✅ CORRECT: Use array filtering
+gh api repos/owner/repo/issues/101/comments \
+  --jq '[.[] | select(.id == 123456)][0]'
+```
+
+**Rule:** Always fetch comment arrays and filter, never access by ID directly
+
+### Defensive Programming Patterns
+
+#### Pattern 1: Validate Before Processing
+
+```bash
+# Validate repository access
+gh api repos/$OWNER/$REPO --jq '.full_name' || {
+  echo "Error: Cannot access repository"
+  exit 1
+}
+
+# Validate PR exists
+gh pr view $PR_NUM --json number || {
+  echo "Error: PR not found"
+  exit 1
+}
+
+# Now safe to proceed with main workflow
+```
+
+#### Pattern 2: Use Fallbacks
+
+```bash
+# Try preferred method, fallback to alternative
+OWNER=$(gh pr view --json headRepositoryOwner -q '.headRepositoryOwner.login' 2>/dev/null) || \
+  OWNER=$(gh repo view --json owner -q '.owner.login')
+```
+
+#### Pattern 3: Fail Fast
+
+```bash
+# Exit immediately on errors
+set -e
+
+# Or check each critical command
+gh api repos/$OWNER/$REPO/pulls/$PR_NUM || exit 1
+```
+
+#### Pattern 4: Explicit Field Lists
+
+```bash
+# ❌ AVOID: Fetching all fields
+gh pr view --json
+
+# ✅ PREFER: Explicit minimal field list
+gh pr view --json number,title,url
+```
+
+### Testing Commands Before Use
+
+```bash
+# Test new gh command before adding to skill
+gh pr view --json-fields | grep -i "field_name"
+
+# Test jq expression
+echo '{"state": "FAILURE"}' | jq 'select(.state == "FAILURE")'
+
+# Test API endpoint
+gh api repos/owner/repo/endpoint --jq '.'
+```
+
+### Summary: Error Prevention Checklist
+
+Before adding a command to the skill:
+
+- [ ] Verify all JSON field names exist (`--json-fields`)
+- [ ] Avoid `!=` in jq expressions (use positive matching)
+- [ ] Don't mix risky/safe commands in parallel
+- [ ] Use array filtering instead of direct ID access
+- [ ] Test commands manually first
+- [ ] Add validation steps before parallel execution
+- [ ] Use explicit minimal field lists
+- [ ] Add fallbacks for critical operations

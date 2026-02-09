@@ -56,26 +56,35 @@ gh auth login
 
 **Step 1: Fetch Data**
 - Get current PR number and details
-- Fetch unresolved review comments from `qodo-code-review[bot]`
-- Filter HTML content to extract clean issue descriptions
+- Fetch **both types** of Qodo comments:
+  - **General comments**: Summary comment with all issues (via `/repos/{owner}/{repo}/issues/{pr}/comments`)
+  - **Inline comments**: Comments on specific lines (via `/repos/{owner}/{repo}/pulls/{pr}/comments`)
+- Parse HTML to extract clean issue descriptions from both formats
 - Extract **Agent Prompt** sections (ready-to-use fix instructions)
+- Deduplicate issues that appear in both comment types
 - Fetch failing CI checks (lint, tests, format)
 
-**Step 2: Parallel Analysis**
-- Launch Task agent (subagent_type="general-purpose") for EACH comment/check
+**Step 2: Deduplicate Issues**
+- Same issue may appear in both general and inline comments
+- Deduplicate by: `file:line:title` or `description_similarity`
+- Prefer inline comment if duplicate (has better metadata)
+- Track both comment IDs for thread resolution
+
+**Step 3: Parallel Analysis**
+- Launch Task agent (subagent_type="general-purpose") for EACH unique issue/check
 - Each agent analyzes:
-  - **Extract Agent Prompt**: Parse `<details><summary>Agent Prompt</summary>` section from HTML
+  - **Extract Agent Prompt**: Parse `<details><summary>Agent Prompt</summary>` or `<summary>Agent prompt</summary>` section from HTML
   - **Severity**: Detect from Qodo badges (🐞 ⛨ 📘) + keywords (see [Severity Guide](references/severity-guide.md))
-  - **Multi-issue detection**: Check for multiple distinct issues in one comment
+  - **Multi-issue detection**: For general comments, each `<details>` block is separate issue
   - **Validity**: valid/invalid/partial based on Evidence section
-  - **Context**: Read file:line from .path and .line fields, understand purpose
+  - **Context**: Read file:line from metadata (inline) or GitHub links (general), understand purpose
   - **Action**: fix/reply/defer/ignore
   - **Fix proposal**: Use Agent Prompt + Fix Focus Areas as primary guidance
 
-**Step 3: Sort Results**
+**Step 4: Sort Results**
 - Sort by severity: CRITICAL → HIGH → MEDIUM → LOW
-- Group multi-issue comments
-- Prepare structured summary
+- Group related issues from same file
+- Prepare structured summary with both general and inline comment IDs
 
 ### Phase 2: CONFIRM (Parent Process Only)
 
@@ -146,6 +155,10 @@ CI Checks (2 failing):
 - Verify push succeeded
 
 **Step 6: Reply to Reviewers**
+- Reply to **all comment locations** where issue appears:
+  - If issue is in general comment: Reply to that comment
+  - If issue is in inline comment: Reply to that inline thread
+  - If issue appears in both: Reply to both locations with same message
 - Use standard templates for each comment:
   - **Fixed**: "Fixed in [hash]: description"
   - **Won't Fix**: "Won't fix: reason"
@@ -156,6 +169,7 @@ CI Checks (2 failing):
 
 **Step 7: Resolve Threads**
 - Mark each addressed thread as resolved via GitHub GraphQL API
+- For issues in both locations, resolve both threads
 - Skip if user selected "Ignore"
 
 **Step 8: Fresh Verification**
@@ -185,20 +199,50 @@ See [Severity Guide](references/severity-guide.md) for detailed classification r
 
 ## Qodo-Specific Handling
 
-**Bot Username:**
+**Two Comment Types:**
+
+Qodo posts comments in **two locations**:
+
+1. **General Comment** (Summary) - Contains all issues in one comment on the PR conversation
+2. **Inline Comments** - Individual comments on specific code lines
+
+**IMPORTANT**: You must fetch **both** to get all issues. General comment often contains issues not in inline comments.
+
+**Fetch General Comments:**
 ```bash
-# Filter for qodo-code-review[bot] specifically
-gh api repos/{owner}/{repo}/pulls/{pr_number}/comments | jq '[.[] |
-  select(.user.login == "qodo-code-review[bot]") |
-  select(.resolved == false)
+# General PR comments (summary with all issues)
+gh api repos/{owner}/{repo}/issues/{pr_number}/comments | jq '[.[] |
+  select(.user.login == "qodo-code-review[bot]" or .user.login == "qodo-merge[bot]")
 ]'
 ```
 
+**Fetch Inline Comments:**
+```bash
+# Inline code review comments (specific lines)
+gh api repos/{owner}/{repo}/pulls/{pr_number}/comments | jq '[.[] |
+  select(.user.login == "qodo-code-review[bot]" or .user.login == "qodo-merge[bot]") |
+  select(.in_reply_to_id == null)
+]'
+```
+
+**Parse General Comments:**
+- General comment contains multiple issues in nested `<details>` blocks
+- Structure: `<details><summary>1. Title <code>📘 Rule violation</code></summary>` (collapsed sections)
+- Each issue has: Description, Code snippet, Evidence, Agent Prompt
+- Extract file/line from GitHub links: `[app/file.py[R363-380]](https://github.com/...)`
+- Parse all `<details>` sections to get complete issue list
+
+**Parse Inline Comments:**
+- Simpler structure with single issue per comment
+- Metadata available: `.path`, `.line`, `.body`
+- May contain same issues as general comment (deduplicate by file+line+title)
+
 **HTML Parsing:**
 - Extract clean text from HTML using regex or HTML parser
-- Parse `<details><summary>Agent Prompt</summary>` for fix instructions
+- Parse `<details><summary>Agent Prompt</summary>` or `<summary>Agent prompt</summary>` for fix instructions
 - Extract numbered items: `1. Title 📘 Rule violation ✓ Correctness`
 - Look for **Fix Focus Areas** section for file:line locations
+- For general comments: Parse multiple `<details>` blocks to extract all issues
 
 **Severity Detection:**
 - ⛨ Security badge → CRITICAL
@@ -223,18 +267,20 @@ gh api repos/{owner}/{repo}/pulls/{pr_number}/comments | jq '[.[] |
 ```
 /qodo-pr-resolver
 
-→ Found 2 Qodo comments + 2 CI failures
+→ Fetching general comments... Found 1 (with 2 issues)
+→ Fetching inline comments... Found 1
+→ Deduplicating... 2 unique issues total
 → Parsing HTML, extracting Agent Prompts...
-→ Detected severities: 1 CRITICAL (⛨ Security), 1 MEDIUM (📘 Rule)
+→ Detected severities: 1 HIGH (📘 ⛯ Reliability), 1 MEDIUM (📘 ✓ Correctness)
 → Analyzing in parallel...
-→ Presenting by severity (CRITICAL first)
+→ Presenting by severity (HIGH first)
 → User confirms actions
 → Applying fixes using Agent Prompt guidance
 → Running tests ✓
-→ Posting replies: "✅ **FIXED** in commit [hash]"
-→ Resolving threads
+→ Posting replies to both general and inline comments
+→ Resolving threads (2 resolved)
 → Fresh verification: 0 unresolved ✓
-→ Summary: 1 CRITICAL fixed, 1 MEDIUM deferred
+→ Summary: 1 HIGH fixed, 1 MEDIUM deferred
 ```
 
 ## Reference Documentation
