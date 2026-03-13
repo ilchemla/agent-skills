@@ -1,14 +1,15 @@
 ---
 name: qodo-pr-resolver
 description: >
-  Resolve Qodo PR review comments through analyze-confirm-execute workflow with severity-based prioritization.
-  Analyzes comment validity, detects CI failures, confirms response approach with user, executes code changes, runs tests, and resolves threads.
+  Resolve Qodo PR review comments through wait-analyze-confirm-execute workflow with severity-based prioritization.
+  Auto-waits for Qodo review via polling if still generating, then analyzes comment validity, detects CI failures,
+  confirms response approach with user, executes code changes, runs tests, and resolves threads.
   Use when responding to Qodo PR review comments, addressing Qodo feedback, resolving review issues, or managing Qodo review threads.
 ---
 
 # Qodo PR Resolver
 
-Efficiently process PR review comments from Qodo PR Agent through a structured 3-phase workflow: **Analyze → Confirm → Execute**.
+Efficiently process PR review comments from Qodo PR Agent through a structured 4-phase workflow: **Wait → Analyze → Confirm → Execute**.
 
 ## Key Features
 
@@ -19,6 +20,7 @@ Efficiently process PR review comments from Qodo PR Agent through a structured 3
 - ✅ **Automatic thread resolution** via GitHub API
 - 🔍 **Multi-issue comment detection** and verification
 - 🔄 **Fresh data verification** for completion
+- ⏳ **Auto-wait for Qodo review** via `/loop` polling when review is still generating
 
 ## When to Use
 
@@ -28,6 +30,7 @@ Use this skill when:
 - Managing multiple review threads efficiently
 - Need to validate comment relevance before acting
 - Want structured approach to handling PR feedback with severity prioritization
+- Just opened a PR and want to process Qodo's review as soon as it's ready
 
 ## Prerequisites
 
@@ -45,12 +48,49 @@ gh auth login
 
 **⚠️ IMPORTANT:**
 - Only **unresolved comments** are processed (resolved comments are skipped)
+- **Phase 0 (Wait) uses CronCreate/CronDelete** — the cron job must self-delete once the review is detected
 - **Phase 2 (Confirm) MUST run in parent process** - never use AskUserQuestion in sub-agents
 - **CRITICAL/HIGH fixes require passing tests** - cannot skip
 - **All sub-issues** in multi-issue comments must be addressed
 - **Fresh verification** confirms zero unresolved items before completion
 
-## 3-Phase Workflow
+## 4-Phase Workflow
+
+### Phase 0: WAIT FOR REVIEW (Loop-based Polling)
+
+Qodo's review takes a few minutes to generate after a PR is opened. During this time, Qodo posts a placeholder comment containing "Looking for bugs?" / "An AI review agent is analyzing this pull request". The actual review replaces this placeholder once ready.
+
+**Step 1: Check Review Readiness**
+- Fetch Qodo bot comments on the PR:
+  ```bash
+  gh api repos/{owner}/{repo}/issues/{pr_number}/comments | jq '[.[] |
+    select(.user.login == "qodo-code-review[bot]" or .user.login == "qodo-merge[bot]")
+  ]'
+  ```
+- **Review is ready** if: Qodo comments exist AND none contain the placeholder text ("Looking for bugs?" or "An AI review agent is analyzing")
+- **Review is NOT ready** if: No Qodo comments exist, OR comments contain the placeholder text
+
+**Step 2: If Not Ready, Set Up Polling via `/loop`**
+- Use CronCreate to schedule a polling job every 2 minutes:
+  ```
+  CronCreate with cron expression "*/2 * * * *" and prompt:
+  "Check if Qodo review is ready on PR #{pr_number}. Fetch comments with:
+   gh api repos/{owner}/{repo}/issues/{pr_number}/comments
+   If Qodo's comment no longer contains 'Looking for bugs?' or 'An AI review agent is analyzing',
+   the review is ready — delete this cron job (CronDelete) and run /qodo-pr-resolver to process it.
+   If still not ready, report status and wait for next poll."
+  ```
+- Inform the user: "Qodo review is still generating. Polling every 2 minutes — you can keep working."
+- **STOP here** — do not proceed to Phase 1. The cron job will re-invoke the skill when ready.
+
+**Step 3: If Ready, Proceed Directly**
+- Skip polling setup, proceed to Phase 1 immediately.
+
+**Important Notes:**
+- Cron jobs are **session-scoped** — they stop if you exit Claude Code
+- Jobs **auto-expire after 3 days** as a safety net
+- The cron job **must delete itself** (CronDelete) once the review is detected
+- If Qodo takes unusually long (>10 minutes), the cron will keep polling — user can cancel manually via CronList + CronDelete
 
 ### Phase 1: ANALYZE (Parallel Sub-agents)
 
@@ -262,11 +302,13 @@ gh api repos/{owner}/{repo}/pulls/{pr_number}/comments | jq '[.[] |
   - `❌ **NOT APPLICABLE**` - Reasoning
   - `📋 **DEFERRED** to #issue` - Will address later
 
-## Quick Example
+## Quick Examples
 
+**Example 1: Review already ready**
 ```
 /qodo-pr-resolver
 
+→ Checking Qodo review status... Review is ready!
 → Fetching general comments... Found 1 (with 2 issues)
 → Fetching inline comments... Found 1
 → Deduplicating... 2 unique issues total
@@ -281,6 +323,23 @@ gh api repos/{owner}/{repo}/pulls/{pr_number}/comments | jq '[.[] |
 → Resolving threads (2 resolved)
 → Fresh verification: 0 unresolved ✓
 → Summary: 1 HIGH fixed, 1 MEDIUM deferred
+```
+
+**Example 2: Review still generating (polling)**
+```
+/qodo-pr-resolver
+
+→ Checking Qodo review status... Still generating ("Looking for bugs?")
+→ Setting up polling every 2 minutes...
+→ Cron job created. You can keep working — I'll notify you when the review is ready.
+
+  [2 minutes later - cron fires]
+→ Polling... Qodo review still generating.
+
+  [2 more minutes - cron fires]
+→ Polling... Review is ready! Deleting cron job.
+→ Running /qodo-pr-resolver...
+→ [Proceeds with Phase 1: Analyze → Confirm → Execute]
 ```
 
 ## Reference Documentation
