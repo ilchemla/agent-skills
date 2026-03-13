@@ -74,11 +74,13 @@ Qodo's review takes a few minutes to generate after a PR is opened. During this 
 - Use CronCreate to schedule a polling job every 2 minutes:
   ```
   CronCreate with cron expression "*/2 * * * *" and prompt:
-  "Check if Qodo review is ready on PR #{pr_number}. Fetch comments with:
-   gh api repos/{owner}/{repo}/issues/{pr_number}/comments
+  "Check if Qodo review is ready on PR #<actual_number> in <actual_owner>/<actual_repo>.
+   Fetch comments with: gh api repos/<actual_owner>/<actual_repo>/issues/<actual_number>/comments
    If Qodo's comment no longer contains 'Looking for bugs?' or 'An AI review agent is analyzing',
    the review is ready — delete this cron job (CronDelete) and run /qodo-pr-resolver to process it.
    If still not ready, report status and wait for next poll."
+  NOTE: Replace all placeholders with actual resolved values before creating the cron.
+  The cron fires in a fresh context with no memory of prior variables.
   ```
 - Inform the user: "Qodo review is still generating. Polling every 2 minutes — you can keep working."
 - **STOP here** — do not proceed to Phase 1. The cron job will re-invoke the skill when ready.
@@ -94,41 +96,80 @@ Qodo's review takes a few minutes to generate after a PR is opened. During this 
 
 ### Phase 1: ANALYZE (Parallel Sub-agents)
 
-**Step 1: Fetch Data**
-- Get current PR number and details
-- Fetch **both types** of Qodo comments:
-  - **General comments**: Summary comment with all issues (via `/repos/{owner}/{repo}/issues/{pr}/comments`)
-  - **Inline comments**: Comments on specific lines (via `/repos/{owner}/{repo}/pulls/{pr}/comments`)
+**Step 1: Detect PR Context (Parent Process)**
+- Get the current PR number and repo info:
+  ```bash
+  gh pr view --json number,headRepositoryOwner,headRepository -q '{number: .number, owner: .headRepositoryOwner.login, repo: .headRepository.name}'
+  ```
+- Store `pr_number`, `owner`, and `repo` — these are used in all subsequent API calls
+
+**Step 2: Fetch and Deduplicate (Parent Process)**
+
+This step runs in the parent process because it produces the issue list that gets distributed to sub-agents.
+
+- Fetch **both types** of Qodo comments (see [Qodo Parsing Guide](references/qodo-parsing.md) for exact API calls and HTML parsing details):
+  - **General comments**: Summary comment with all issues (via Issues API)
+  - **Inline comments**: Comments on specific lines (via Pulls API)
 - Parse HTML to extract clean issue descriptions from both formats
 - Extract **Agent Prompt** sections (ready-to-use fix instructions)
-- Deduplicate issues that appear in both comment types
+- Deduplicate issues that appear in both comment types (by `file:line:title`)
+- Prefer inline comment if duplicate (has better metadata), but track both comment IDs
 - Fetch failing CI checks (lint, tests, format)
 
-**Step 2: Deduplicate Issues**
-- Same issue may appear in both general and inline comments
-- Deduplicate by: `file:line:title` or `description_similarity`
-- Prefer inline comment if duplicate (has better metadata)
-- Track both comment IDs for thread resolution
+**Step 3: Parallel Analysis (via Sub-agents)**
 
-**Step 3: Parallel Analysis**
-- Launch Task agent (subagent_type="general-purpose") for EACH unique issue/check
-- Each agent analyzes:
-  - **Extract Agent Prompt**: Parse `<details><summary>Agent Prompt</summary>` or `<summary>Agent prompt</summary>` section from HTML
-  - **Severity**: Detect from Qodo badges (🐞 ⛨ 📘) + keywords (see [Severity Guide](references/severity-guide.md))
-  - **Multi-issue detection**: For general comments, each `<details>` block is separate issue
-  - **Validity**: valid/invalid/partial based on Evidence section
-  - **Context**: Read file:line from metadata (inline) or GitHub links (general), understand purpose
-  - **Action**: fix/reply/defer/ignore
-  - **Fix proposal**: Use Agent Prompt + Fix Focus Areas as primary guidance
+Each unique issue gets its own sub-agent so they all run in parallel. This matters because a PR with 5+ issues would take forever to analyze sequentially, but finishes in the time of the slowest single analysis when parallelized.
 
-**Step 4: Sort Results**
+For each unique issue/check from Step 2, launch a sub-agent using the Agent tool:
+
+```
+Agent(
+  subagent_type="general-purpose",
+  description="Analyze Qodo issue: <short title>",
+  prompt="""
+  Analyze this Qodo PR review issue and return a structured assessment.
+
+  ## Issue Data
+  - Title: <issue title>
+  - File: <file path>
+  - Line(s): <line range>
+  - Raw HTML body: <the comment body or details block>
+  - Comment ID(s): <general comment ID and/or inline comment ID>
+
+  ## Your Tasks
+  1. Extract the Agent Prompt section from the HTML (look for <details><summary>Agent Prompt</summary> or <summary>Agent prompt</summary>)
+  2. Read the referenced file and lines to understand the code context
+  3. Classify severity using Qodo badges: ⛨ Security → CRITICAL, 🐞 Bug → HIGH, 📘 Rule → MEDIUM, 📎 Minor → LOW
+  4. Assess validity: is this a real issue (valid), false positive (invalid), or partially correct (partial)?
+  5. Check for multi-issue: does this comment contain multiple distinct problems?
+  6. Recommend action: fix / reply / defer / ignore
+
+  ## Return Format
+  Return your analysis as a structured summary:
+  - severity: CRITICAL | HIGH | MEDIUM | LOW
+  - validity: valid | invalid | partial
+  - action: fix | reply | defer | ignore
+  - sub_issues: [list if multi-issue, otherwise single item]
+  - agent_prompt: <extracted agent prompt text>
+  - fix_proposal: <what to change and why>
+  - comment_ids: {general: <id or null>, inline: <id or null>}
+  """
+)
+```
+
+Launch ALL sub-agents in a single message (multiple Agent tool calls in one response) so they run concurrently. Do not wait for one to finish before launching the next.
+
+**Step 4: Collect and Sort Results**
+- Wait for all sub-agents to return
 - Sort by severity: CRITICAL → HIGH → MEDIUM → LOW
 - Group related issues from same file
 - Prepare structured summary with both general and inline comment IDs
 
 ### Phase 2: CONFIRM (Parent Process Only)
 
-**Present Analysis:**
+This phase is a hard gate — you cannot proceed to Phase 3 without explicit user approval. The user needs to see what was found and decide what to do about each group before any code is changed. This prevents unwanted fixes and gives the user control over the response strategy.
+
+**Step 1: Present Analysis**
 
 Display comments grouped by severity:
 
@@ -157,11 +198,56 @@ CI Checks (2 failing):
   - Tests: 2 failing tests
 ```
 
-**Get Confirmation:**
-- Use AskUserQuestion for each severity group
-- Options: Apply fix, Reply to reviewer, Defer to issue, Ignore, Custom
-- CRITICAL/HIGH default to "Apply fix (Recommended)"
-- Allow multi-select for similar comments
+**Step 2: Get User Confirmation via AskUserQuestion**
+
+After presenting the analysis above, use the AskUserQuestion tool to ask the user what to do. This is not optional — do not skip this and jump to fixing.
+
+Use AskUserQuestion for each severity group that has issues. Example:
+
+```
+AskUserQuestion(
+  question="""
+  How would you like to handle the CRITICAL issues?
+
+  1. Comment #1 (auth.py:156) - SQL injection + missing validation
+     Recommended: Apply fix
+
+  Options per issue:
+  - fix: Apply the recommended code change
+  - reply: Reply to reviewer explaining why (no code change)
+  - defer: Create a ticket and reply with "Deferred to #issue"
+  - ignore: Skip entirely (no reply, no fix)
+
+  Reply with your choice for each issue (e.g., "fix all" or "fix #1, defer #2").
+  """
+)
+```
+
+Then ask again for HIGH issues, then MEDIUM, then LOW. You can batch MEDIUM and LOW into one question if there are many:
+
+```
+AskUserQuestion(
+  question="""
+  How would you like to handle the remaining MEDIUM/LOW issues?
+
+  MEDIUM:
+  3. Comment #3 (utils.py:18) - Performance optimization → Recommended: defer
+
+  LOW:
+  4. Comment #4 (helpers.py:5) - Variable naming → Recommended: fix (batch)
+  5. Comment #5 (helpers.py:22) - Missing docstring → Recommended: fix (batch)
+
+  Reply with your choices (e.g., "defer #3, fix #4-5").
+  """
+)
+```
+
+Wait for each AskUserQuestion response before proceeding. Only after ALL severity groups are confirmed, move to Phase 3.
+
+**Defaults when user says "go ahead" or similar:**
+- CRITICAL/HIGH: Apply fix
+- MEDIUM: Defer
+- LOW: Fix (batched)
 
 ### Phase 3: EXECUTE
 
@@ -169,7 +255,10 @@ CI Checks (2 failing):
 - Auto-detect test/lint/format commands from project config
 - See [Test Integration Guide](references/test-integration.md)
 
-**Step 2: Apply Fixes (By Severity)**
+**Step 2: Apply Fixes Sequentially (By Severity)**
+
+Apply fixes one at a time in severity order — do not parallelize this step. Fixes may touch the same files, and commits must be ordered logically.
+
 - Process CRITICAL → HIGH → MEDIUM → LOW
 - For each fix:
   - Apply code changes
@@ -227,80 +316,19 @@ CI Checks (2 failing):
 | **MEDIUM** | 📘 Rule violation, ✓ Correctness | performance, refactor, code smell, rule violation | Recommended | Batch |
 | **LOW** | 📎 Requirement gaps (minor) | style, nit, formatting, typo | Optional | Batch |
 
-**Qodo-Specific Detection:**
-- Parse HTML for emoji badges: `🐞 Bug`, `📘 Rule violation`, `⛨ Security`
-- Extract severity from badge combinations
-- Security badge (⛨) → Always CRITICAL
-- Bug badge (🐞) → HIGH (or CRITICAL if security-related)
-
 **Processing order**: CRITICAL → HIGH → MEDIUM → LOW
 
-See [Severity Guide](references/severity-guide.md) for detailed classification rules.
+For Qodo badge-to-severity mapping, see [Qodo Parsing Guide](references/qodo-parsing.md). For detailed classification rules, see [Severity Guide](references/severity-guide.md).
 
 ## Qodo-Specific Handling
 
-**Two Comment Types:**
+For detailed parsing instructions (API calls, HTML structure, badge detection, deduplication), see the [Qodo Parsing Guide](references/qodo-parsing.md). Read it during Phase 1 Step 2 when fetching and parsing comment data.
 
-Qodo posts comments in **two locations**:
-
-1. **General Comment** (Summary) - Contains all issues in one comment on the PR conversation
-2. **Inline Comments** - Individual comments on specific code lines
-
-**IMPORTANT**: You must fetch **both** to get all issues. General comment often contains issues not in inline comments.
-
-**Fetch General Comments:**
-```bash
-# General PR comments (summary with all issues)
-gh api repos/{owner}/{repo}/issues/{pr_number}/comments | jq '[.[] |
-  select(.user.login == "qodo-code-review[bot]" or .user.login == "qodo-merge[bot]")
-]'
-```
-
-**Fetch Inline Comments:**
-```bash
-# Inline code review comments (specific lines)
-gh api repos/{owner}/{repo}/pulls/{pr_number}/comments | jq '[.[] |
-  select(.user.login == "qodo-code-review[bot]" or .user.login == "qodo-merge[bot]") |
-  select(.in_reply_to_id == null)
-]'
-```
-
-**Parse General Comments:**
-- General comment contains multiple issues in nested `<details>` blocks
-- Structure: `<details><summary>1. Title <code>📘 Rule violation</code></summary>` (collapsed sections)
-- Each issue has: Description, Code snippet, Evidence, Agent Prompt
-- Extract file/line from GitHub links: `[app/file.py[R363-380]](https://github.com/...)`
-- Parse all `<details>` sections to get complete issue list
-
-**Parse Inline Comments:**
-- Simpler structure with single issue per comment
-- Metadata available: `.path`, `.line`, `.body`
-- May contain same issues as general comment (deduplicate by file+line+title)
-
-**HTML Parsing:**
-- Extract clean text from HTML using regex or HTML parser
-- Parse `<details><summary>Agent Prompt</summary>` or `<summary>Agent prompt</summary>` for fix instructions
-- Extract numbered items: `1. Title 📘 Rule violation ✓ Correctness`
-- Look for **Fix Focus Areas** section for file:line locations
-- For general comments: Parse multiple `<details>` blocks to extract all issues
-
-**Severity Detection:**
-- ⛨ Security badge → CRITICAL
-- 🐞 Bug + Security context → CRITICAL
-- 🐞 Bug → HIGH
-- 📘 Rule violation → MEDIUM
-- 📎 Requirement gaps → LOW (or MEDIUM depending on context)
-
-**Agent Prompt Usage:**
-- Qodo provides ready-to-use fix prompts in `<details><summary>Agent Prompt</summary>`
-- Extract these and use as primary fix guidance
-- Agent Prompt contains: Issue description, Issue Context, Fix Focus Areas
-
-**Response Format:**
-- Match user's response pattern:
-  - `✅ **FIXED** in commit [hash]` - Description
-  - `❌ **NOT APPLICABLE**` - Reasoning
-  - `📋 **DEFERRED** to #issue` - Will address later
+**Key points:**
+- Qodo posts in **two locations** (general summary + inline comments) — fetch both
+- Deduplicate by `file:line:title` before launching sub-agents
+- Extract Agent Prompt sections as primary fix guidance
+- Use Qodo reply format for responses (see [Reply Templates](references/reply-templates.md))
 
 ## Quick Examples
 
@@ -308,20 +336,28 @@ gh api repos/{owner}/{repo}/pulls/{pr_number}/comments | jq '[.[] |
 ```
 /qodo-pr-resolver
 
-→ Checking Qodo review status... Review is ready!
-→ Fetching general comments... Found 1 (with 2 issues)
-→ Fetching inline comments... Found 1
-→ Deduplicating... 2 unique issues total
-→ Parsing HTML, extracting Agent Prompts...
-→ Detected severities: 1 HIGH (📘 ⛯ Reliability), 1 MEDIUM (📘 ✓ Correctness)
-→ Analyzing in parallel...
-→ Presenting by severity (HIGH first)
-→ User confirms actions
-→ Applying fixes using Agent Prompt guidance
-→ Running tests ✓
-→ Posting replies to both general and inline comments
-→ Resolving threads (2 resolved)
-→ Fresh verification: 0 unresolved ✓
+→ Phase 0: Checking Qodo review status... Review is ready!
+
+→ Phase 1: Fetching general comments... Found 1 (with 2 issues)
+→ Phase 1: Fetching inline comments... Found 1
+→ Phase 1: Deduplicating... 2 unique issues total
+→ Phase 1: Launching 2 sub-agents in parallel to analyze each issue...
+→ Phase 1: [Agent 1] Analyzing HIGH issue in service.py:42...
+→ Phase 1: [Agent 2] Analyzing MEDIUM issue in utils.py:18...
+→ Phase 1: All sub-agents complete. Results sorted by severity.
+
+→ Phase 2: Presenting analysis by severity...
+   [displays severity-grouped summary]
+→ Phase 2: AskUserQuestion — "How to handle HIGH issues? (fix/reply/defer/ignore)"
+   User: "fix"
+→ Phase 2: AskUserQuestion — "How to handle MEDIUM issues? (fix/reply/defer/ignore)"
+   User: "defer"
+
+→ Phase 3: Applying fixes using Agent Prompt guidance...
+→ Phase 3: Running tests ✓
+→ Phase 3: Posting replies to both general and inline comments
+→ Phase 3: Resolving threads (2 resolved)
+→ Phase 3: Fresh verification: 0 unresolved ✓
 → Summary: 1 HIGH fixed, 1 MEDIUM deferred
 ```
 
@@ -345,6 +381,7 @@ gh api repos/{owner}/{repo}/pulls/{pr_number}/comments | jq '[.[] |
 ## Reference Documentation
 
 **Core Guides:**
+- [Qodo Parsing Guide](references/qodo-parsing.md) - Comment fetching, HTML parsing, badge detection, deduplication
 - [Severity Classification Guide](references/severity-guide.md) - Detailed severity rules and examples
 - [Reply Templates](references/reply-templates.md) - Standard professional response templates
 - [Commit Strategy](references/commit-strategy.md) - Conventional Commits and batching strategy
@@ -360,15 +397,20 @@ gh api repos/{owner}/{repo}/pulls/{pr_number}/comments | jq '[.[] |
 ## Best Practices
 
 ### Analysis Phase
+- **One sub-agent per issue**: Each Qodo issue gets its own Agent(subagent_type="general-purpose") call — never analyze issues inline in the parent process
+- **Launch all at once**: Put all Agent tool calls in a single response so they run concurrently
+- **Pass full context**: Each sub-agent needs the raw HTML body, file path, line range, and comment IDs
 - **Severity first**: Classify before recommending action
 - **Detect multi-issue**: Look for "AND", "also", "additionally"
-- **Parallel execution**: Launch all agents at once
 - **Include CI checks**: Analyze failing checks alongside comments
 
 ### Confirmation Phase
+- **Always use AskUserQuestion**: Never skip confirmation — this is a hard gate before Phase 3
+- **Ask per severity group**: One AskUserQuestion for CRITICAL, one for HIGH, one for MEDIUM/LOW (can batch)
+- **Wait for each response**: Do not proceed to the next group until the user answers
 - **Present by severity**: Show CRITICAL first, LOW last
-- **Smart defaults**: CRITICAL/HIGH default to "Apply fix"
-- **Group similar**: Batch related MEDIUM/LOW comments
+- **Smart defaults**: If user says "go ahead" → CRITICAL/HIGH=fix, MEDIUM=defer, LOW=fix(batch)
+- **Group similar**: Batch related MEDIUM/LOW comments into one question
 
 ### Execution Phase
 - **Process by severity**: Fix CRITICAL first, LOW last
@@ -383,7 +425,7 @@ gh api repos/{owner}/{repo}/pulls/{pr_number}/comments | jq '[.[] |
 - This skill is designed specifically for Qodo PR Agent comments
 - Can be adapted for other automated review tools by modifying bot username filter
 - Always verify changes before pushing to ensure correctness
-- Maintain professional tone in all reviewer interactions (no emojis in replies)
+- Maintain professional tone in all reviewer interactions (use Qodo emoji format for Qodo comments, see [Reply Templates](references/reply-templates.md))
 - The analyze phase is crucial - thorough exploration prevents incorrect fixes
 - Test integration ensures changes don't break existing functionality
 - Fresh verification provides confidence that all work is complete
