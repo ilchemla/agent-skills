@@ -56,6 +56,19 @@ gh auth login
 
 ## 4-Phase Workflow
 
+### Pre-check: Verify Code is Pushed
+
+Before anything else, check that the user's local code matches what Qodo reviewed on the remote. Qodo reviews what's on the remote branch, so local-only changes would make you fix stale comments.
+
+```bash
+git status --porcelain     # Check for uncommitted changes
+git log @{u}..HEAD --oneline  # Check for unpushed commits
+```
+
+- **Uncommitted changes exist**: Inform the user and ask if they want to commit and push first.
+- **Unpushed commits exist**: Inform the user that Qodo hasn't reviewed these yet. Ask if they want to push. If yes, push and tell them to wait ~5 minutes for Qodo to re-review, then re-run the skill.
+- **Everything pushed**: Proceed to Phase 0.
+
 ### Phase 0: WAIT FOR REVIEW (Loop-based Polling)
 
 Qodo's review takes a few minutes to generate after a PR is opened. During this time, Qodo posts a placeholder comment containing "Looking for bugs?" / "An AI review agent is analyzing this pull request". The actual review replaces this placeholder once ready.
@@ -159,10 +172,10 @@ Agent(
 
 Launch ALL sub-agents in a single message (multiple Agent tool calls in one response) so they run concurrently. Do not wait for one to finish before launching the next.
 
-**Step 4: Collect and Sort Results**
+**Step 4: Collect Results (Preserve Qodo's Order)**
 - Wait for all sub-agents to return
-- Sort by severity: CRITICAL → HIGH → MEDIUM → LOW
-- Group related issues from same file
+- Preserve Qodo's original ordering — do not re-sort by severity. Qodo already orders issues by importance, and re-sorting can lose that intent.
+- Annotate each issue with its severity classification from the sub-agent analysis
 - Prepare structured summary with both general and inline comment IDs
 
 ### Phase 2: CONFIRM (Parent Process Only)
@@ -171,7 +184,7 @@ This phase is a hard gate — you cannot proceed to Phase 3 without explicit use
 
 **Step 1: Present Analysis**
 
-Display comments grouped by severity:
+Display issues in Qodo's original order, annotated with severity:
 
 ```
 🔴 CRITICAL Issues (2):
@@ -255,23 +268,24 @@ Wait for each AskUserQuestion response before proceeding. Only after ALL severit
 - Auto-detect test/lint/format commands from project config
 - See [Test Integration Guide](references/test-integration.md)
 
-**Step 2: Apply Fixes Sequentially (By Severity)**
+**Step 2: Fix → Commit → Reply → Resolve (Per Issue)**
 
-Apply fixes one at a time in severity order — do not parallelize this step. Fixes may touch the same files, and commits must be ordered logically.
+Process each issue individually in Qodo's original order. For each fix, the full cycle is: apply code change → commit → reply to thread → resolve thread. This keeps git history clean (one commit per fix) and closes threads as you go.
 
-- Process CRITICAL → HIGH → MEDIUM → LOW
-- For each fix:
-  - Apply code changes
-  - Verify all sub-issues addressed (for multi-issue comments)
-  - Commit with appropriate strategy:
-    - **CRITICAL/HIGH**: Individual commits
-    - **MEDIUM/LOW**: Batch into single commit
-- Use Conventional Commits format
-- See [Commit Strategy Guide](references/commit-strategy.md)
+For each issue the user approved as "fix":
+1. **Apply** the code change using the Agent Prompt as primary guidance
+2. **Verify** all sub-issues addressed (for multi-issue comments)
+3. **Commit** with Conventional Commits format: `fix: <issue title>` (see [Commit Strategy Guide](references/commit-strategy.md))
+4. **Reply** to all comment locations where this issue appears (inline thread and/or general comment) using templates from [Reply Templates](references/reply-templates.md)
+5. **Resolve** the thread(s) via GitHub GraphQL API
+
+For deferred issues, reply with the deferral reason and resolve the thread — no code change or commit needed.
+
+Skip issues the user selected "Ignore" — no reply, no resolve.
 
 **Step 3: Fix CI Checks**
 - Run lint --fix, formatters
-- Commit CI fixes separately
+- Commit CI fixes separately: `style: fix lint/formatting issues`
 
 **Step 4: Run Tests**
 - Execute detected test command
@@ -283,38 +297,34 @@ Apply fixes one at a time in severity order — do not parallelize this step. Fi
 - Push all commits at once
 - Verify push succeeded
 
-**Step 6: Reply to Reviewers**
-- Reply to **all comment locations** where issue appears:
-  - If issue is in general comment: Reply to that comment
-  - If issue is in inline comment: Reply to that inline thread
-  - If issue appears in both: Reply to both locations with same message
-- Use standard templates for each comment:
-  - **Fixed**: "Fixed in [hash]: description"
-  - **Won't Fix**: "Won't fix: reason"
-  - **By Design**: "By design: explanation"
-  - **Deferred**: "Deferred to #issue: will address later"
-  - **Acknowledged**: "Acknowledged: note"
-- See [Reply Templates](references/reply-templates.md)
+**Step 6: React to Qodo's Review Comment**
+- Find Qodo's main "Code Review by Qodo" comment and add a +1 reaction to acknowledge it:
+  ```bash
+  gh api repos/{owner}/{repo}/issues/comments/{qodo_comment_id}/reactions \
+    -X POST -f content='+1'
+  ```
+- If the reaction fails (comment not found, API error), continue — this is a nice-to-have, not critical.
 
-**Step 7: Resolve Threads**
-- Mark each addressed thread as resolved via GitHub GraphQL API
-- For issues in both locations, resolve both threads
-- Skip if user selected "Ignore"
-
-**Step 8: Fresh Verification**
+**Step 7: Fresh Verification**
 - Re-fetch PR data
 - Confirm zero unresolved comments
 - Verify all CI checks passing
 - Provide completion summary
 
+**Step 8: Show PR URL**
+- Print the PR link so the user can navigate to it:
+  ```
+  PR: https://github.com/{owner}/{repo}/pull/{pr_number}
+  ```
+
 ## Severity Classification
 
-| Severity | Qodo Indicators | Keywords | Priority | Commit |
-|----------|-----------------|----------|----------|--------|
-| **CRITICAL** | ⛨ Security, 🐞 Bug (security) | security, vulnerability, injection, XSS, SQL | Must fix first | Individual |
-| **HIGH** | 🐞 Bug, ⛯ Reliability | bug, error, crash, fail, memory leak | Should fix | Individual |
-| **MEDIUM** | 📘 Rule violation, ✓ Correctness | performance, refactor, code smell, rule violation | Recommended | Batch |
-| **LOW** | 📎 Requirement gaps (minor) | style, nit, formatting, typo | Optional | Batch |
+| Severity | Qodo Indicators | Keywords | Priority |
+|----------|-----------------|----------|----------|
+| **CRITICAL** | ⛨ Security, 🐞 Bug (security) | security, vulnerability, injection, XSS, SQL | Must fix first |
+| **HIGH** | 🐞 Bug, ⛯ Reliability | bug, error, crash, fail, memory leak | Should fix |
+| **MEDIUM** | 📘 Rule violation, ✓ Correctness | performance, refactor, code smell, rule violation | Recommended |
+| **LOW** | 📎 Requirement gaps (minor) | style, nit, formatting, typo | Optional |
 
 **Processing order**: CRITICAL → HIGH → MEDIUM → LOW
 
@@ -336,29 +346,31 @@ For detailed parsing instructions (API calls, HTML structure, badge detection, d
 ```
 /qodo-pr-resolver
 
+→ Pre-check: All code pushed ✓
+
 → Phase 0: Checking Qodo review status... Review is ready!
 
 → Phase 1: Fetching general comments... Found 1 (with 2 issues)
 → Phase 1: Fetching inline comments... Found 1
 → Phase 1: Deduplicating... 2 unique issues total
 → Phase 1: Launching 2 sub-agents in parallel to analyze each issue...
-→ Phase 1: [Agent 1] Analyzing HIGH issue in service.py:42...
-→ Phase 1: [Agent 2] Analyzing MEDIUM issue in utils.py:18...
-→ Phase 1: All sub-agents complete. Results sorted by severity.
+→ Phase 1: All sub-agents complete. Issues annotated with severity.
 
-→ Phase 2: Presenting analysis by severity...
-   [displays severity-grouped summary]
+→ Phase 2: Presenting issues in Qodo's order...
+   [displays issue table with severity annotations]
 → Phase 2: AskUserQuestion — "How to handle HIGH issues? (fix/reply/defer/ignore)"
    User: "fix"
 → Phase 2: AskUserQuestion — "How to handle MEDIUM issues? (fix/reply/defer/ignore)"
    User: "defer"
 
-→ Phase 3: Applying fixes using Agent Prompt guidance...
+→ Phase 3: Fix #1 (HIGH) → commit → reply → resolve ✓
+→ Phase 3: Defer #2 (MEDIUM) → reply → resolve ✓
 → Phase 3: Running tests ✓
-→ Phase 3: Posting replies to both general and inline comments
-→ Phase 3: Resolving threads (2 resolved)
+→ Phase 3: Pushing all commits...
+→ Phase 3: +1 reaction on Qodo's review comment ✓
 → Phase 3: Fresh verification: 0 unresolved ✓
 → Summary: 1 HIGH fixed, 1 MEDIUM deferred
+→ PR: https://github.com/owner/repo/pull/123
 ```
 
 **Example 2: Review still generating (polling)**
@@ -413,11 +425,13 @@ For detailed parsing instructions (API calls, HTML structure, badge detection, d
 - **Group similar**: Batch related MEDIUM/LOW comments into one question
 
 ### Execution Phase
-- **Process by severity**: Fix CRITICAL first, LOW last
+- **One commit per fix**: Apply → commit → reply → resolve for each issue before moving to the next
+- **Preserve Qodo's order**: Process issues in Qodo's original order, not re-sorted by severity
 - **Verify multi-issue**: Confirm ALL sub-issues addressed
 - **Test before push**: NEVER push failing tests
 - **Use templates**: Consistent professional replies
-- **Resolve threads**: Automate via API
+- **React to review**: Add +1 reaction to Qodo's main comment
+- **Show PR URL**: Print the PR link at the end
 - **Fresh verification**: Always re-fetch to confirm completion
 
 ## Important Notes
