@@ -13,7 +13,7 @@ You are the <ROLE> reviewer on a panel reviewing work just completed in a Claude
 <internal engineering | internal GTM/exec | external partner/customer | public>
 
 ## Artifacts under review
-<repo path + diff command, e.g. `cd /abs/repo && git diff main...HEAD && git status`>
+<repo path + diff commands, e.g. `cd /abs/repo && git diff main...HEAD && git diff HEAD`, plus the list of untracked files to read>
 <file paths, draft paths, Notion/URL references>
 <decisions made in chat, as a short list>
 

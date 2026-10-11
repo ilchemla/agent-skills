@@ -46,7 +46,7 @@ Also check the web tool once: run `nimble --version` and remember whether the Ni
 ## Step 1: Scope the work
 From the conversation, write down, in a few lines each:
 - **Intent:** what the user asked for, in their words where possible.
-- **Artifacts:** everything produced or changed: code (the diff command, e.g. `git diff <base>...HEAD` plus `git status`), docs and drafts (paths/URLs), and decisions made in chat.
+- **Artifacts:** everything produced or changed: code (committed and uncommitted: `git diff <base>...HEAD`, `git diff HEAD` for staged and unstaged changes, and `git ls-files --others --exclude-standard` for new untracked files, which reviewers read directly), docs and drafts (paths/URLs), and decisions made in chat.
 - **Acceptance criteria:** explicit or reasonably implied.
 - **Settled decisions:** what the user already decided, so reviewers do not relitigate it.
 - **Work type:** code / docs / spec / plan / research / messaging / data / mixed. **Audience:** internal engineering, internal business/exec, external customer or partner, public.
