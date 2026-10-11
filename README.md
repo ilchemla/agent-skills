@@ -12,7 +12,7 @@ Claude Code skills I use every day.
 ```bash
 npx skills add ilchemla/agent-skills --skill panel --skill tldr -g -a claude-code
 ```
-Or copy by hand: `cp -R skills/panel skills/tldr ~/.claude/skills/`. Start a new Claude Code session afterwards.
+Or copy by hand: `mkdir -p ~/.claude/skills && cp -R skills/panel skills/tldr ~/.claude/skills/`. Start a new Claude Code session afterwards.
 
 ## panel
 Run `/panel` (or say "review what we did with a team of experts") when you finish something: code, a spec, a plan, a doc, a message.
