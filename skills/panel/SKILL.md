@@ -81,17 +81,17 @@ Each prompt is short and contains:
 2. The filled brief (for `domain-expert`, also the domain string, e.g. "API design").
 3. The output file path: `<report folder>/<role>.md`.
 
-Do not paste the session transcript. Do not restate the playbook. Prefer paths to inline content. If the session cannot write files (for example in plan mode), tell reviewers to return their findings inline instead.
+Do not paste the session transcript. Do not restate the playbook. Prefer paths to inline content. If the session cannot write files (for example in plan mode), tell reviewers to return their full findings inline, in the return-contract format, instead of the 3-line summary. Steps 4 and 5 then work from those replies and the report is shown in chat only.
 
 ### Step 4: Verify and merge
 As agents return (each returns a 3-line summary; full findings are in its file), tell the user briefly ("3 of 4 back"). When all are in, or one failed (note it under coverage, never treat a missing reviewer as a clean pass):
-1. Read every findings file. Dedup: same location and same issue merge into one, credit all roles, keep the higher severity. Agreement between different roles is a signal; mention it.
+1. Read every findings file (or inline reply, in read-only sessions). Dedup: same location and same issue merge into one, credit all roles, keep the higher severity. Agreement between different roles is a signal; mention it.
 2. **Verify every P0 and P1 yourself** against the artifact. Unconfirmable means drop it or demote it to P2 marked "unverified".
 3. If a P0 is contested and you cannot settle it from evidence, launch one `skeptic` on that finding only.
 4. Drop: confidence below 75 (except P0s you verified), pre-existing issues this work did not touch, linter-catchable nits, pure taste, and anything that reopens a settled decision. A concern that conflicts with a settled decision becomes an **open question** for the user, not a finding.
 
 ### Step 5: Report
-Write `<report folder>/report.md`:
+Write `<report folder>/report.md` (in a read-only session, show the same report in chat instead):
 ```
 # Panel review: <what was reviewed>
 Verdict: ship | fix-first | rethink. <one sentence why>
