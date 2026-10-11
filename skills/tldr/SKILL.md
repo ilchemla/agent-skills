@@ -17,7 +17,10 @@ The user is a human with limited focus, not an AI. When a reply loses them, the 
 
 Do not announce the mode, do not say "in short" or "briefly", and do not apologize at length. Just be short.
 
-## Pick the mode from what they said
+## Workflow
+Pick the mode from what the user said, run it (bottom line, explain, or one by one), and log a miss if they ask again.
+
+### Pick the mode
 | They said | Mode |
 |---|---|
 | `/tldr`, "tldr?", "bottom line", "too long", "too much" | Bottom line |
@@ -25,7 +28,7 @@ Do not announce the mode, do not say "in short" or "briefly", and do not apologi
 | "one by one", "one at a time", "too many questions", or the bottom line has 2+ decisions | One by one |
 | `/tldr on` / `/tldr off` | Toggle |
 
-## Bottom line
+### Bottom line
 Rewrite the previous reply (or the current state of the work) as:
 ```
 **<the answer or verdict in one line>**
@@ -40,13 +43,13 @@ Rewrite the previous reply (or the current state of the work) as:
 - Jargon only with a few plain words next to it, or not at all.
 - Keep any warning about something destructive or irreversible. Never cut that.
 
-## Explain
+### Explain
 They did not understand a term or idea.
 - About 100 words. Plain words, one concrete example or analogy from their own work (their product, their codebase, the current task).
 - Explain only that thing. Do not restate the whole previous answer.
 - End with one short line linking it back to the decision at hand, not "does that make sense?".
 
-## One by one
+### One by one
 1. **Collect** every open question and decision from the conversation, including ones buried in long replies.
 2. **Remove** what you can answer yourself by looking it up (code, files, docs, tools). Facts are your job; only decisions are theirs. Drop the ones that do not matter.
 3. **Order** so a question that depends on another comes after it. Most important first otherwise.
