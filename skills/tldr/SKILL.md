@@ -17,6 +17,10 @@ The user is a human with limited focus, not an AI. When a reply loses them, the 
 
 Do not announce the mode, do not say "in short" or "briefly", and do not apologize at length. Just be short.
 
+## Prerequisites
+- Claude Code with AskUserQuestion (used for one-by-one questions).
+- Optional, for always-on mode only: a `UserPromptSubmit` hook in `~/.claude/settings.json` and this skill installed at `~/.claude/skills/tldr/` (see below).
+
 ## Workflow
 Pick the mode from what the user said, run it (bottom line, explain, or one by one), and log a miss if they ask again.
 
