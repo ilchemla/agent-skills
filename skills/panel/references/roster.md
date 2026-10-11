@@ -30,8 +30,8 @@ Pick on **evidence in the work**, not keywords. Each extra role must cover a dis
 | Public SDK / API feature | intent-correctness, simplifier, product-gtm, tests-verification, domain-expert (API design) |
 | PRD / spec / plan | intent-correctness, simplifier, product-gtm, fresh-reader, skeptic |
 | Roadmap / strategy / business case | intent-correctness, product-gtm, skeptic, fact-checker, simplifier |
-| Research doc / competitive analysis | fact-checker, product-gtm, domain-expert, simplifier |
-| Email, chat message, announcement | product-gtm, fresh-reader, simplifier (+ fact-checker if it states facts) |
+| Research doc / competitive analysis | intent-correctness, fact-checker, product-gtm, domain-expert, simplifier |
+| Email, chat message, announcement | intent-correctness, product-gtm, fresh-reader, simplifier (+ fact-checker if it states facts) |
 | Data pipeline / metrics / dashboard | intent-correctness, domain-expert (data or analytics), skeptic, simplifier |
 
 ## Learnings adjustments
