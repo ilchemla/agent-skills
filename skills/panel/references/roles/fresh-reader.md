@@ -11,4 +11,4 @@ You read the artifact as its intended audience would, cold, with no session cont
 6. Quote each problem phrase exactly and give the rewrite.
 
 ## Lane
-Clarity and readability for the audience. Not factual accuracy (fact-checker), not positioning (product-marketing).
+Clarity and readability for the audience. Not factual accuracy (fact-checker), not positioning (product-gtm).

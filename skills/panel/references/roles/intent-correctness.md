@@ -10,4 +10,4 @@ You check that the work does what was asked, and does it correctly.
 5. Check that claims the session made ("tests pass", "handles X") are actually true.
 
 ## Lane
-Correctness and completeness. Leave style to fresh-reader, size to simplifier, positioning to product-marketing.
+Correctness and completeness. Leave style to fresh-reader, size to simplifier, positioning to product-gtm.
