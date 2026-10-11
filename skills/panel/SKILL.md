@@ -31,7 +31,10 @@ User state is kept outside the skill folder, so it survives updates and never en
 - `~/.claude/panel/learnings.md`: one entry per run.
 - Reports go to `~/.claude/drafts/panel/<YYYY-MM-DD>-<slug>/`.
 
-## Step 0: Load context (and first-run setup)
+## Workflow
+Load context, scope the work, pick the panel, brief and launch reviewers in parallel, verify and merge their findings, report, apply what the user approves, then log the run.
+
+### Step 0: Load context (and first-run setup)
 Read `~/.claude/panel/workspace-context.md` and `~/.claude/panel/learnings.md` if they exist.
 
 If the context file does not exist, set it up once before reviewing:
@@ -43,7 +46,7 @@ If the context file does not exist, set it up once before reviewing:
 
 Also check the web tool once: run `nimble --version` and remember whether the Nimble CLI is available, for the briefs.
 
-## Step 1: Scope the work
+### Step 1: Scope the work
 From the conversation, write down, in a few lines each:
 - **Intent:** what the user asked for, in their words where possible.
 - **Artifacts:** everything produced or changed: code (committed and uncommitted: `git diff <base>...HEAD`, `git diff HEAD` for staged and unstaged changes, and `git ls-files --others --exclude-standard` for new untracked files, which reviewers read directly), docs and drafts (paths/URLs), and decisions made in chat.
@@ -53,7 +56,7 @@ From the conversation, write down, in a few lines each:
 
 If the work is trivial (a few-line diff, one paragraph), say so and run a single `intent-correctness` reviewer instead of a panel. `--quick` forces at most 3 roles on a smaller model; `--deep` allows 6 and the strongest model for every role.
 
-## Step 2: Pick the panel
+### Step 2: Pick the panel
 Apply `${CLAUDE_SKILL_DIR}/references/roster.md`. Usually 3-5 roles, max 6. Arguments override: named roles are forced in, `-role` forces one out.
 
 Announce before launching, one line per role with the reason, plus notable skips:
@@ -64,7 +67,7 @@ Skipped: fact-checker (no external claims).
 ```
 Then launch immediately. No approval gate.
 
-## Step 3: Brief and launch
+### Step 3: Brief and launch
 Create the report folder (`mkdir -p`). Fill `${CLAUDE_SKILL_DIR}/references/brief-template.md` once, then launch **all roles in one message** as subagents, each named after its role. Use a smaller model (e.g. sonnet) for fresh-reader, simplifier, product-gtm and fact-checker; inherit the session model for the others, unless `--quick`/`--deep` say otherwise.
 
 Each prompt is short and contains:
@@ -74,14 +77,14 @@ Each prompt is short and contains:
 
 Do not paste the session transcript. Do not restate the playbook. Prefer paths to inline content. If the session cannot write files (for example in plan mode), tell reviewers to return their findings inline instead.
 
-## Step 4: Verify and merge
+### Step 4: Verify and merge
 As agents return (each returns a 3-line summary; full findings are in its file), tell the user briefly ("3 of 4 back"). When all are in, or one failed (note it under coverage, never treat a missing reviewer as a clean pass):
 1. Read every findings file. Dedup: same location and same issue merge into one, credit all roles, keep the higher severity. Agreement between different roles is a signal; mention it.
 2. **Verify every P0 and P1 yourself** against the artifact. Unconfirmable means drop it or demote it to P2 marked "unverified".
 3. If a P0 is contested and you cannot settle it from evidence, launch one `skeptic` on that finding only.
 4. Drop: confidence below 75 (except P0s you verified), pre-existing issues this work did not touch, linter-catchable nits, pure taste, and anything that reopens a settled decision. A concern that conflicts with a settled decision becomes an **open question** for the user, not a finding.
 
-## Step 5: Report
+### Step 5: Report
 Write `<report folder>/report.md`:
 ```
 # Panel review: <what was reviewed>
@@ -102,7 +105,7 @@ If any reviewer fell back from Nimble to built-in web search, end the report wit
 
 In chat, give the verdict, the P0/P1 rows, and the report path. Plain language. Follow the writing preferences in the workspace context.
 
-## Step 6: Decide and apply
+### Step 6: Decide and apply
 Pick the interaction from context; do not ask when the answer is obvious:
 - **Nothing actionable:** no question. Say it is clean.
 - **Clear-cut list:** one AskUserQuestion, options like "Apply all P0+P1 (Recommended)", "Apply all incl. P2", "Let me pick", "Report only".
@@ -116,7 +119,7 @@ After approval:
 
 Never commit, push, post, send, or publish. Anything leaving the machine stays behind the user's normal approval.
 
-## Step 7: Learn
+### Step 7: Learn
 Append one entry to `~/.claude/panel/learnings.md` (create it with a one-line header if missing):
 ```
 ## YYYY-MM-DD <slug>
