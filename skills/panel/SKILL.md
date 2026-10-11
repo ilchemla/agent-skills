@@ -19,6 +19,12 @@ argument-hint: "[roles to force in, e.g. 'security skeptic' | -role | --quick | 
 
 The question this answers: **"If a few sharp specialists looked at what we just produced, what would they make us change?"** The value is in three things an ad hoc "use subagents to review" prompt keeps getting wrong: picking the *right* experts for this work, giving them a clean brief instead of a session dump, and verifying their findings before they reach the user.
 
+## Prerequisites
+- Claude Code with subagents (the Agent tool) and AskUserQuestion.
+- `jq` for the first-run setup (reads only `enabledPlugins` from settings).
+- Optional: the Nimble CLI for stronger web research; built-in web search is the fallback.
+- `git` when reviewing code; `gh` if reviewers need GitHub context.
+
 ## Principles
 - **Least is best.** The best solution has the least code and the fewest words. Duplication, staleness and over-engineering are defects, so a simplifier always sits on the panel.
 - **Product eyes by default.** Anything a user, customer, buyer or stakeholder will see, or that shapes the product, gets a product/GTM reviewer.
