@@ -71,12 +71,14 @@ The short rules in `${CLAUDE_SKILL_DIR}/gentle.md` can be injected into every pr
   "hooks": {
     "UserPromptSubmit": [
       { "hooks": [ { "type": "command",
-        "command": "[ -f ~/.claude/.tldr-gentle ] && cat ~/.claude/skills/tldr/gentle.md || true" } ] }
+        "command": "[ -f ~/.claude/.tldr-gentle ] && cat ~/.claude/skills/tldr/gentle.md ~/.claude/tldr/preferences.md 2>/dev/null || true" } ] }
     ]
   }
 }
 ```
 The path assumes this skill is installed at `~/.claude/skills/tldr/`. Merge into existing hooks rather than replacing them.
+
+Personal rules (language, punctuation, tone) go in `~/.claude/tldr/preferences.md`, one bullet per rule. The hook adds them after the shared rules, and they survive skill updates. Do not edit `gentle.md` itself.
 
 Toggles:
 - `/tldr on`: first check that `~/.claude/settings.json` contains `tldr-gentle`. If it does not, say the hook is missing, show the snippet above, and offer to add it. Only after the hook exists: `mkdir -p ~/.claude && touch ~/.claude/.tldr-gentle`, then reply `Gentle mode on. Takes effect on your next message.`

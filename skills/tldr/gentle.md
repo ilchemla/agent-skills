@@ -7,4 +7,3 @@
 - Jargon only with a few plain words next to it.
 - Never shorten warnings about destructive or irreversible actions.
 - If they say "tldr", "too much", "one by one" or "i don't understand", use the tldr skill.
-- Your own preferences (edit this line): e.g. language, punctuation, tone.
