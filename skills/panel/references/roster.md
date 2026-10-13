@@ -13,6 +13,7 @@ Pick on **evidence in the work**, not keywords. Each extra role must cover a dis
 |---|---|---|
 | `product-gtm` | Anything a user, customer, buyer or stakeholder will see, or that shapes the product: features, APIs/SDKs, public docs, PRDs, specs, roadmaps, pricing, positioning, launch plans, announcements, customer emails. | Purely internal work (refactors, infra, CI, internal tooling, team process). State the skip. |
 | `fresh-reader` | There is prose someone will read (docs, specs, plans, emails, chat posts, READMEs, PR descriptions, release notes) or a UI. | Pure code with no user-facing text. |
+| `visual-design` | The artifact is visual: slides or a deck, a diagram or chart, a PDF layout, an HTML page, a UI, an image. Needs rendered views (see SKILL.md Step 1). | Text-only work with no layout (code, plain markdown, chat messages). |
 
 ## On evidence
 | Role | Include when |
@@ -33,6 +34,9 @@ Pick on **evidence in the work**, not keywords. Each extra role must cover a dis
 | Research doc / competitive analysis | intent-correctness, fact-checker, product-gtm, domain-expert, simplifier |
 | Email, chat message, announcement | intent-correctness, product-gtm, fresh-reader, simplifier (+ fact-checker if it states facts) |
 | Data pipeline / metrics / dashboard | intent-correctness, domain-expert (data or analytics), skeptic, simplifier |
+| Slide deck | intent-correctness, simplifier, visual-design, product-gtm, fresh-reader |
+| Diagram | intent-correctness, simplifier, visual-design, domain-expert |
+| Branded PDF / report | intent-correctness, simplifier, visual-design, fresh-reader, fact-checker |
 
 ## Learnings adjustments
 Check `~/.claude/panel/learnings.md`. An optional role with no accepted findings in its last 5 runs on this work type can be skipped; say so in the announcement. Never auto-skip the always-on roles (`intent-correctness`, `simplifier`), and never auto-skip `security` or `skeptic` when their condition holds.
