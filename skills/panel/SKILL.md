@@ -3,14 +3,15 @@ name: panel
 description: >-
   Review what was just done in the session with a panel of expert subagents
   picked for this specific work. Scopes what was asked and produced, picks 3-6
-  reviewer roles (always correctness and a simplifier; product/GTM eyes, fresh
-  reader, skeptic, security, tests, fact-checker, or a domain expert when the
-  work calls for it), briefs them in parallel, verifies and dedups their
+  reviewer roles (always correctness and a simplifier; product/GTM eyes,
+  visual design, fresh reader, skeptic, security, tests, fact-checker, or a
+  domain expert when the work calls for it), briefs them in parallel, verifies and dedups their
   findings, and returns one prioritized P0/P1/P2 report with a ship /
   fix-first / rethink verdict. Works for any kind of work: code, docs, specs,
-  plans, research, messaging, data. Use when the user says "review what we
+  plans, research, messaging, data, and visuals (slides, diagrams, PDFs, web
+  pages), which it renders to images before review. Use when the user says "review what we
   did", "use a team of subagents to review", "panel", "experts review this",
-  "fresh eyes", "challenge this", or similar end-of-task review asks.
+  "fresh eyes", "challenge this", "review these slides / this diagram", or similar end-of-task review asks.
   Reviewers are read-only; fixes are applied only after the user approves.
 argument-hint: "[roles to force in, e.g. 'security skeptic' | -role | --quick | --deep]"
 ---
@@ -24,6 +25,7 @@ The question this answers: **"If a few sharp specialists looked at what we just 
 - `jq` for the first-run setup (reads only `enabledPlugins` from settings).
 - Optional: the Nimble CLI for stronger web research; built-in web search is the fallback.
 - `git` when reviewing code; `gh` if reviewers need GitHub context.
+- Optional, for visual work: `pdftoppm` (poppler) and Google Chrome or Chromium to render artifacts to images.
 
 ## Principles
 - **Least is best.** The best solution has the least code and the fewest words. Duplication, staleness and over-engineering are defects, so a simplifier always sits on the panel.
@@ -60,6 +62,17 @@ From the conversation, write down, in a few lines each:
 - **Settled decisions:** what the user already decided, so reviewers do not relitigate it.
 - **Work type:** code / docs / spec / plan / research / messaging / data / mixed. **Audience:** internal engineering, internal business/exec, external customer or partner, public.
 
+**Ask before launching when context would change the review.** If the audience, how the author weighs sources (for example a vendor blog vs. a study), or who else keeps working on this in parallel is unclear and would change what reviewers flag, ask one AskUserQuestion first. Never assume a freeze or that others are waiting.
+
+**Render visual artifacts.** If anything under review is visual (slides, a diagram or chart, a PDF, an HTML page, a UI, an image), render it to PNGs before briefing, so reviewers judge what a person will actually see. First create the report folder now (`mkdir -p <report folder>/renders`), then give each artifact its own subfolder, `renders/<artifact-name>/`, so two decks never overwrite each other:
+- PDF or exported slides: `pdftoppm -png -r 110 <file.pdf> <report folder>/renders/<artifact-name>/page`
+- HTML: headless Chrome, `--headless=new --hide-scrollbars --window-size=1440,900 --screenshot=<out.png> file://<abs path>`; when it is a web page or UI, add a mobile pass with a tall window (`--window-size=390,4000`) so the whole narrow layout is captured, not just the first screen. A screenshot shows only the first screen, so for long pages also run `--headless=new --no-pdf-header-footer --print-to-pdf=<out.pdf> file://<abs path>` and split it with `pdftoppm` as above
+- SVG: wrap it in a minimal HTML page (`<img src="file.svg">`) and screenshot it the same way
+- Mermaid: put the source in `<pre class="mermaid">...</pre>`, load `https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js` with `mermaid.initialize({startOnLoad:true})`, and screenshot with `--virtual-time-budget=5000` so it finishes drawing (needs network; otherwise report it as not rendered)
+- Images: use them as they are
+
+Every reviewer gets the render paths, not only `visual-design`. If rendering fails, say so under "What the panel did not check" rather than reviewing the source as if it were the picture.
+
 If the work is trivial (a few-line diff, one paragraph), say so and run a single `intent-correctness` reviewer instead of a panel. `--quick` forces at most 3 roles on a smaller model; `--deep` allows 6 and the strongest model for every role.
 
 ### Step 2: Pick the panel
@@ -74,7 +87,7 @@ Skipped: fact-checker (no external claims).
 Then launch immediately. No approval gate.
 
 ### Step 3: Brief and launch
-Create the report folder (`mkdir -p`). Fill `${CLAUDE_SKILL_DIR}/references/brief-template.md` once, then launch **all roles in one message** as subagents, each named after its role. Use a smaller model (e.g. sonnet) for fresh-reader, simplifier, product-gtm and fact-checker; inherit the session model for the others, unless `--quick`/`--deep` say otherwise.
+Create the report folder (`mkdir -p`) if Step 1 did not already. Fill `${CLAUDE_SKILL_DIR}/references/brief-template.md` once, then launch **all roles in one message** as subagents, each named after its role. Use a smaller model (e.g. sonnet) for fresh-reader, simplifier, product-gtm and fact-checker; inherit the session model for the others, unless `--quick`/`--deep` say otherwise.
 
 Each prompt is short and contains:
 1. "Read your playbook: `<absolute path to references/roles/<role>.md>`" and "Read the return contract: `<absolute path to references/return-contract.md>`".
@@ -116,6 +129,7 @@ Pick the interaction from context; do not ask when the answer is obvious:
 - **Nothing actionable:** no question. Say it is clean.
 - **Clear-cut list:** one AskUserQuestion, options like "Apply all P0+P1 (Recommended)", "Apply all incl. P2", "Let me pick", "Report only".
 - **Judgment calls** (open questions, product trade-offs, findings that change scope): one AskUserQuestion per call, up to 4 per round, recommended option first with the reason. A second round only if answers create new decisions.
+- **Rewrites:** when a fix rewrites a section of a doc, a slide or a diagram, show the proposed section in chat (or the re-rendered image path) before asking to apply it. The question box can hide long text.
 
 After approval:
 1. Apply the fixes in the main thread.
