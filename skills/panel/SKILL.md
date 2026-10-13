@@ -65,7 +65,7 @@ From the conversation, write down, in a few lines each:
 **Ask before launching when context would change the review.** If the audience, how the author weighs sources (for example a vendor blog vs. a study), or who else keeps working on this in parallel is unclear and would change what reviewers flag, ask one AskUserQuestion first. Never assume a freeze or that others are waiting.
 
 **Render visual artifacts.** If anything under review is visual (slides, a diagram or chart, a PDF, an HTML page, a UI, an image), render it to PNGs before briefing, so reviewers judge what a person will actually see. First create the report folder now (`mkdir -p <report folder>/renders`), then give each artifact its own subfolder, `renders/<artifact-name>/`, so two decks never overwrite each other:
-- PDF or exported slides: `pdftoppm -png -r 110 <file.pdf> <report folder>/renders/page`
+- PDF or exported slides: `pdftoppm -png -r 110 <file.pdf> <report folder>/renders/<artifact-name>/page`
 - HTML: headless Chrome, `--headless=new --hide-scrollbars --window-size=1440,900 --screenshot=<out.png> file://<abs path>`; add a `--window-size=390,844` pass when it is a web page or UI. A screenshot shows only the first screen, so for long pages also run `--headless=new --no-pdf-header-footer --print-to-pdf=<out.pdf> file://<abs path>` and split it with `pdftoppm` as above
 - SVG or Mermaid: wrap it in a minimal HTML page and screenshot it the same way
 - Images: use them as they are

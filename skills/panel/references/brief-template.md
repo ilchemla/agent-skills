@@ -18,7 +18,7 @@ You are the <ROLE> reviewer on a panel reviewing work just completed in a Claude
 <decisions made in chat, as a short list>
 
 ## Rendered views
-<PNG paths from <report folder>/renders/, one per page or slide, or "none". Visual judgments must be based on these images, not on the source.>
+<PNG paths from <report folder>/renders/<artifact-name>/, grouped by artifact, one per page or slide, or "none". Visual judgments must be based on these images, not on the source.>
 
 ## Acceptance criteria
 <explicit or implied>
