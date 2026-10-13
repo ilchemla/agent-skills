@@ -3,14 +3,15 @@ name: panel
 description: >-
   Review what was just done in the session with a panel of expert subagents
   picked for this specific work. Scopes what was asked and produced, picks 3-6
-  reviewer roles (always correctness and a simplifier; product/GTM eyes, fresh
-  reader, skeptic, security, tests, fact-checker, or a domain expert when the
-  work calls for it), briefs them in parallel, verifies and dedups their
+  reviewer roles (always correctness and a simplifier; product/GTM eyes,
+  visual design, fresh reader, skeptic, security, tests, fact-checker, or a
+  domain expert when the work calls for it), briefs them in parallel, verifies and dedups their
   findings, and returns one prioritized P0/P1/P2 report with a ship /
   fix-first / rethink verdict. Works for any kind of work: code, docs, specs,
-  plans, research, messaging, data. Use when the user says "review what we
+  plans, research, messaging, data, and visuals (slides, diagrams, PDFs, web
+  pages), which it renders to images before review. Use when the user says "review what we
   did", "use a team of subagents to review", "panel", "experts review this",
-  "fresh eyes", "challenge this", or similar end-of-task review asks.
+  "fresh eyes", "challenge this", "review these slides / this diagram", or similar end-of-task review asks.
   Reviewers are read-only; fixes are applied only after the user approves.
 argument-hint: "[roles to force in, e.g. 'security skeptic' | -role | --quick | --deep]"
 ---
