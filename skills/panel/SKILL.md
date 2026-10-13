@@ -67,7 +67,8 @@ From the conversation, write down, in a few lines each:
 **Render visual artifacts.** If anything under review is visual (slides, a diagram or chart, a PDF, an HTML page, a UI, an image), render it to PNGs before briefing, so reviewers judge what a person will actually see. First create the report folder now (`mkdir -p <report folder>/renders`), then give each artifact its own subfolder, `renders/<artifact-name>/`, so two decks never overwrite each other:
 - PDF or exported slides: `pdftoppm -png -r 110 <file.pdf> <report folder>/renders/<artifact-name>/page`
 - HTML: headless Chrome, `--headless=new --hide-scrollbars --window-size=1440,900 --screenshot=<out.png> file://<abs path>`; add a `--window-size=390,844` pass when it is a web page or UI. A screenshot shows only the first screen, so for long pages also run `--headless=new --no-pdf-header-footer --print-to-pdf=<out.pdf> file://<abs path>` and split it with `pdftoppm` as above
-- SVG or Mermaid: wrap it in a minimal HTML page and screenshot it the same way
+- SVG: wrap it in a minimal HTML page (`<img src="file.svg">`) and screenshot it the same way
+- Mermaid: put the source in `<pre class="mermaid">...</pre>`, load `https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js` with `mermaid.initialize({startOnLoad:true})`, and screenshot with `--virtual-time-budget=5000` so it finishes drawing (needs network; otherwise report it as not rendered)
 - Images: use them as they are
 
 Every reviewer gets the render paths, not only `visual-design`. If rendering fails, say so under "What the panel did not check" rather than reviewing the source as if it were the picture.
