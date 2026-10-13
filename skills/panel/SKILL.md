@@ -61,6 +61,8 @@ From the conversation, write down, in a few lines each:
 - **Settled decisions:** what the user already decided, so reviewers do not relitigate it.
 - **Work type:** code / docs / spec / plan / research / messaging / data / mixed. **Audience:** internal engineering, internal business/exec, external customer or partner, public.
 
+**Ask before launching when context would change the review.** If the audience, how the author weighs sources (for example a vendor blog vs. a study), or who else keeps working on this in parallel is unclear and would change what reviewers flag, ask one AskUserQuestion first. Never assume a freeze or that others are waiting.
+
 **Render visual artifacts.** If anything under review is visual (slides, a diagram or chart, a PDF, an HTML page, a UI, an image), render it to PNGs in `<report folder>/renders/` before briefing, so reviewers judge what a person will actually see:
 - PDF or exported slides: `pdftoppm -png -r 110 <file.pdf> <report folder>/renders/page`
 - HTML: headless Chrome, `--headless=new --hide-scrollbars --window-size=1440,900 --screenshot=<out.png> file://<abs path>`; add a `--window-size=390,844` pass when it is a web page or UI
@@ -125,6 +127,7 @@ Pick the interaction from context; do not ask when the answer is obvious:
 - **Nothing actionable:** no question. Say it is clean.
 - **Clear-cut list:** one AskUserQuestion, options like "Apply all P0+P1 (Recommended)", "Apply all incl. P2", "Let me pick", "Report only".
 - **Judgment calls** (open questions, product trade-offs, findings that change scope): one AskUserQuestion per call, up to 4 per round, recommended option first with the reason. A second round only if answers create new decisions.
+- **Rewrites:** when a fix rewrites a section of a doc, a slide or a diagram, show the proposed section in chat (or the re-rendered image path) before asking to apply it. The question box can hide long text.
 
 After approval:
 1. Apply the fixes in the main thread.
