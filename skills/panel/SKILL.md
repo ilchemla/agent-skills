@@ -24,6 +24,7 @@ The question this answers: **"If a few sharp specialists looked at what we just 
 - `jq` for the first-run setup (reads only `enabledPlugins` from settings).
 - Optional: the Nimble CLI for stronger web research; built-in web search is the fallback.
 - `git` when reviewing code; `gh` if reviewers need GitHub context.
+- Optional, for visual work: `pdftoppm` (poppler) and Google Chrome or Chromium to render artifacts to images.
 
 ## Principles
 - **Least is best.** The best solution has the least code and the fewest words. Duplication, staleness and over-engineering are defects, so a simplifier always sits on the panel.
@@ -59,6 +60,14 @@ From the conversation, write down, in a few lines each:
 - **Acceptance criteria:** explicit or reasonably implied.
 - **Settled decisions:** what the user already decided, so reviewers do not relitigate it.
 - **Work type:** code / docs / spec / plan / research / messaging / data / mixed. **Audience:** internal engineering, internal business/exec, external customer or partner, public.
+
+**Render visual artifacts.** If anything under review is visual (slides, a diagram or chart, a PDF, an HTML page, a UI, an image), render it to PNGs in `<report folder>/renders/` before briefing, so reviewers judge what a person will actually see:
+- PDF or exported slides: `pdftoppm -png -r 110 <file.pdf> <report folder>/renders/page`
+- HTML: headless Chrome, `--headless=new --hide-scrollbars --window-size=1440,900 --screenshot=<out.png> file://<abs path>`; add a `--window-size=390,844` pass when it is a web page or UI
+- SVG or Mermaid: wrap it in a minimal HTML page and screenshot it the same way
+- Images: use them as they are
+
+Every reviewer gets the render paths, not only `visual-design`. If rendering fails, say so under "What the panel did not check" rather than reviewing the source as if it were the picture.
 
 If the work is trivial (a few-line diff, one paragraph), say so and run a single `intent-correctness` reviewer instead of a panel. `--quick` forces at most 3 roles on a smaller model; `--deep` allows 6 and the strongest model for every role.
 
