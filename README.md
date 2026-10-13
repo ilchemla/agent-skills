@@ -17,7 +17,8 @@ Or copy by hand: `mkdir -p ~/.claude/skills && cp -R skills/panel skills/tldr ~/
 ## panel
 Run `/panel` (or say "review what we did with a team of experts") when you finish something: code, a spec, a plan, a doc, a message.
 
-- It picks 3 to 6 reviewers for *this* work instead of a fixed pipeline. Correctness and a simplifier always sit on the panel. Product, security, skeptic, tests, fact-checker, fresh reader or a domain expert join when the work calls for it.
+- It picks 3 to 6 reviewers for *this* work instead of a fixed pipeline. Correctness and a simplifier always sit on the panel. Product, visual design, security, skeptic, tests, fact-checker, fresh reader or a domain expert join when the work calls for it.
+- For slides, diagrams, PDFs and web pages it renders them to images first, so reviewers judge what people will see, not the source.
 - It checks every important finding against the source before showing it to you.
 - You get a verdict (ship, fix-first or rethink), a P0/P1/P2 table, and what the panel did not check. It asks before applying anything.
 
