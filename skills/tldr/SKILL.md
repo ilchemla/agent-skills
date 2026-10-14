@@ -78,11 +78,11 @@ The short rules in `${CLAUDE_SKILL_DIR}/gentle.md` can be injected into every pr
 ```
 The path assumes this skill is installed at `~/.claude/skills/tldr/`. Merge into existing hooks rather than replacing them.
 
-Personal rules (language, punctuation, tone) go in `~/.claude/tldr/preferences.md`, one bullet per rule. The hook adds them after the shared rules, and they survive skill updates. Do not edit `gentle.md` itself.
+Personal rules (language, punctuation, tone) go in `~/.claude/tldr/preferences.md`, one bullet per rule. If `~/.claude/memory/AGENTS.md` exists, follow it instead: the rules live in the vault's `shared/preferences/writing.md` and the hook reads that file. The hook adds them after the shared rules, and they survive skill updates. Do not edit `gentle.md` itself.
 
 Toggles:
 - `/tldr on`: first check that `~/.claude/settings.json` contains `tldr-gentle`. If it does not, say the hook is missing, show the snippet above, and offer to add it. Only after the hook exists: `mkdir -p ~/.claude && touch ~/.claude/.tldr-gentle`, then reply `Gentle mode on. Takes effect on your next message.`
 - `/tldr off`: `rm -f ~/.claude/.tldr-gentle`, then reply `Gentle mode off.`
 
 ## Learn
-If they say "tldr?", "still too long" or "i don't understand" right after a tldr reply, it missed. Append one line to `~/.claude/tldr/learnings.md` (create the folder and file if missing): date, mode, what they said, what was too much (length, jargon, number of bullets). On the second miss of the same kind, **propose** a concrete tightening of the matching rule here or in `gentle.md`, and apply it only after the user approves.
+If they say "tldr?", "still too long" or "i don't understand" right after a tldr reply, it missed. Append one line to the learnings file (vault page `skills/tldr-learnings.md` if `~/.claude/memory/AGENTS.md` exists, else `~/.claude/tldr/learnings.md`; create it if missing): date, mode, what they said, what was too much (length, jargon, number of bullets). On the second miss of the same kind, **propose** a concrete tightening of the matching rule here or in `gentle.md`, and apply it only after the user approves.

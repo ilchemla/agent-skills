@@ -2,7 +2,7 @@ STATUS: unfilled
 
 # Workspace context
 
-Template. On the first `/panel` run it is copied to `~/.claude/panel/workspace-context.md`, filled from your Claude setup, and confirmed by you. Edit that copy freely. Only the relevant bullets go into a reviewer brief. A project's own CLAUDE.md / AGENTS.md wins over this file.
+Template. On the first `/panel` run it is copied to `<state>/workspace-context.md` (see SKILL.md, Where state lives), filled from your Claude setup, and confirmed by you. Edit that copy freely. Only the relevant bullets go into a reviewer brief. A project's own CLAUDE.md / AGENTS.md wins over this file.
 
 ## Who
 - Role:

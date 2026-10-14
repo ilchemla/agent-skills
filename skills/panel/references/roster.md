@@ -39,4 +39,4 @@ Pick on **evidence in the work**, not keywords. Each extra role must cover a dis
 | Branded PDF / report | intent-correctness, simplifier, visual-design, fresh-reader, fact-checker |
 
 ## Learnings adjustments
-Check `~/.claude/panel/learnings.md`. An optional role with no accepted findings in its last 5 runs on this work type can be skipped; say so in the announcement. Never auto-skip the always-on roles (`intent-correctness`, `simplifier`), and never auto-skip `security` or `skeptic` when their condition holds.
+Check `<state>/learnings.md` (see SKILL.md, Where state lives). An optional role with no accepted findings in its last 5 runs on this work type can be skipped; say so in the announcement. Never auto-skip the always-on roles (`intent-correctness`, `simplifier`), and never auto-skip `security` or `skeptic` when their condition holds.

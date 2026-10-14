@@ -34,19 +34,19 @@ The question this answers: **"If a few sharp specialists looked at what we just 
 - **Zero findings is a valid answer.** A short clean report beats padded noise.
 
 ## Where state lives
-User state is kept outside the skill folder, so it survives updates and never ends up in a git clone of this skill:
-- `~/.claude/panel/workspace-context.md`: who the user is, their product, tools, audiences, preferences.
-- `~/.claude/panel/learnings.md`: one entry per run.
+User state is kept outside the skill folder, so it survives updates and never ends up in a git clone of this skill. If `~/.claude/memory/AGENTS.md` exists, follow it: panel's state is the vault pages `skills/panel-workspace-context.md` and `skills/panel-learnings.md`. Otherwise it is `~/.claude/panel/`. Below, `<state>/workspace-context.md` and `<state>/learnings.md` mean whichever applies.
+- `<state>/workspace-context.md`: who the user is, their product, tools, audiences, preferences.
+- `<state>/learnings.md`: one entry per run.
 - Reports go to the drafts root: follow `~/.claude/memory/AGENTS.md` if present (`<drafts root>/panel/<YYYY-MM-DD>-<slug>/`), else `~/.claude/drafts/panel/<YYYY-MM-DD>-<slug>/`.
 
 ## Workflow
 Load context, scope the work, pick the panel, brief and launch reviewers in parallel, verify and merge their findings, report, apply what the user approves, then log the run.
 
 ### Step 0: Load context (and first-run setup)
-Read `~/.claude/panel/workspace-context.md` and `~/.claude/panel/learnings.md` if they exist.
+Read `<state>/workspace-context.md` and `<state>/learnings.md` if they exist.
 
 If the context file does not exist, set it up once before reviewing:
-1. `mkdir -p ~/.claude/panel` and copy `${CLAUDE_SKILL_DIR}/references/workspace-context.template.md` there as `workspace-context.md`.
+1. Create `<state>` if needed and copy `${CLAUDE_SKILL_DIR}/references/workspace-context.template.md` there as `workspace-context.md`.
 2. Read, if present: `~/.claude/CLAUDE.md`, `~/.claude/projects/*/memory/MEMORY.md` (and memory files it points to that look relevant), the skills listed in this session, the enabled plugins only (`jq .enabledPlugins ~/.claude/settings.json`; never read or copy the rest of that file), and the current project's CLAUDE.md / AGENTS.md.
 3. Fill the sections from what you found. Keep it short; write "unknown" rather than guessing. Never copy secrets, tokens or credentials.
 4. Show the draft and ask at most 3 questions with AskUserQuestion to fill the most important gaps (typical: main audiences, product one-liner, approval rules for sending or publishing). Recommended option first.
@@ -140,7 +140,7 @@ After approval:
 Never commit, push, post, send, or publish. Anything leaving the machine stays behind the user's normal approval.
 
 ### Step 7: Learn
-Append one entry to `~/.claude/panel/learnings.md` (create it with a one-line header if missing):
+Append one entry to `<state>/learnings.md` (create it with a one-line header if missing):
 ```
 ## YYYY-MM-DD <slug>
 - work: <type> · audience: <audience>
