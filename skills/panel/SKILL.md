@@ -37,7 +37,7 @@ The question this answers: **"If a few sharp specialists looked at what we just 
 User state is kept outside the skill folder, so it survives updates and never ends up in a git clone of this skill:
 - `~/.claude/panel/workspace-context.md`: who the user is, their product, tools, audiences, preferences.
 - `~/.claude/panel/learnings.md`: one entry per run.
-- Reports go to `~/.claude/drafts/panel/<YYYY-MM-DD>-<slug>/`.
+- Reports go to the drafts root: follow `~/.claude/memory/AGENTS.md` if present (`<drafts root>/panel/<YYYY-MM-DD>-<slug>/`), else `~/.claude/drafts/panel/<YYYY-MM-DD>-<slug>/`.
 
 ## Workflow
 Load context, scope the work, pick the panel, brief and launch reviewers in parallel, verify and merge their findings, report, apply what the user approves, then log the run.
