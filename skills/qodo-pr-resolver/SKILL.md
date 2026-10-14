@@ -48,7 +48,7 @@ gh auth login
 
 **⚠️ IMPORTANT:**
 - Only **unresolved comments** are processed (resolved comments are skipped)
-- **Phase 0 (Wait) uses CronCreate/CronDelete** — the cron job must self-delete once the review is detected
+- **Phase 0 (Wait) uses CronCreate/CronDelete**: the cron job must self-delete once the review is detected
 - **Phase 2 (Confirm) MUST run in parent process** - never use AskUserQuestion in sub-agents
 - **CRITICAL/HIGH fixes require passing tests** - cannot skip
 - **All sub-issues** in multi-issue comments must be addressed
@@ -90,22 +90,22 @@ Qodo's review takes a few minutes to generate after a PR is opened. During this 
   "Check if Qodo review is ready on PR #<actual_number> in <actual_owner>/<actual_repo>.
    Fetch comments with: gh api repos/<actual_owner>/<actual_repo>/issues/<actual_number>/comments
    If Qodo's comment no longer contains 'Looking for bugs?' or 'An AI review agent is analyzing',
-   the review is ready — delete this cron job (CronDelete) and run /qodo-pr-resolver to process it.
+   the review is ready: delete this cron job (CronDelete) and run /qodo-pr-resolver to process it.
    If still not ready, report status and wait for next poll."
   NOTE: Replace all placeholders with actual resolved values before creating the cron.
   The cron fires in a fresh context with no memory of prior variables.
   ```
-- Inform the user: "Qodo review is still generating. Polling every 2 minutes — you can keep working."
-- **STOP here** — do not proceed to Phase 1. The cron job will re-invoke the skill when ready.
+- Inform the user: "Qodo review is still generating. Polling every 2 minutes. You can keep working."
+- **STOP here**: do not proceed to Phase 1. The cron job will re-invoke the skill when ready.
 
 **Step 3: If Ready, Proceed Directly**
 - Skip polling setup, proceed to Phase 1 immediately.
 
 **Important Notes:**
-- Cron jobs are **session-scoped** — they stop if you exit Claude Code
+- Cron jobs are **session-scoped**: they stop if you exit Claude Code
 - Jobs **auto-expire after 3 days** as a safety net
 - The cron job **must delete itself** (CronDelete) once the review is detected
-- If Qodo takes unusually long (>10 minutes), the cron will keep polling — user can cancel manually via CronList + CronDelete
+- If Qodo takes unusually long (>10 minutes), the cron will keep polling: user can cancel manually via CronList + CronDelete
 
 ### Phase 1: ANALYZE (Parallel Sub-agents)
 
@@ -114,7 +114,7 @@ Qodo's review takes a few minutes to generate after a PR is opened. During this 
   ```bash
   gh pr view --json number,headRepositoryOwner,headRepository -q '{number: .number, owner: .headRepositoryOwner.login, repo: .headRepository.name}'
   ```
-- Store `pr_number`, `owner`, and `repo` — these are used in all subsequent API calls
+- Store `pr_number`, `owner`, and `repo`: these are used in all subsequent API calls
 
 **Step 2: Fetch and Deduplicate (Parent Process)**
 
@@ -174,13 +174,13 @@ Launch ALL sub-agents in a single message (multiple Agent tool calls in one resp
 
 **Step 4: Collect Results (Preserve Qodo's Order)**
 - Wait for all sub-agents to return
-- Preserve Qodo's original ordering — do not re-sort by severity. Qodo already orders issues by importance, and re-sorting can lose that intent.
+- Preserve Qodo's original ordering: do not re-sort by severity. Qodo already orders issues by importance, and re-sorting can lose that intent.
 - Annotate each issue with its severity classification from the sub-agent analysis
 - Prepare structured summary with both general and inline comment IDs
 
 ### Phase 2: CONFIRM (Parent Process Only)
 
-This phase is a hard gate — you cannot proceed to Phase 3 without explicit user approval. The user needs to see what was found and decide what to do about each group before any code is changed. This prevents unwanted fixes and gives the user control over the response strategy.
+This phase is a hard gate: you cannot proceed to Phase 3 without explicit user approval. The user needs to see what was found and decide what to do about each group before any code is changed. This prevents unwanted fixes and gives the user control over the response strategy.
 
 **Step 1: Present Analysis**
 
@@ -213,7 +213,7 @@ CI Checks (2 failing):
 
 **Step 2: Get User Confirmation via AskUserQuestion**
 
-After presenting the analysis above, use the AskUserQuestion tool to ask the user what to do. This is not optional — do not skip this and jump to fixing.
+After presenting the analysis above, use the AskUserQuestion tool to ask the user what to do. This is not optional: do not skip this and jump to fixing.
 
 Use AskUserQuestion for each severity group that has issues. Example:
 
@@ -279,9 +279,9 @@ For each issue the user approved as "fix":
 4. **Reply** to all comment locations where this issue appears (inline thread and/or general comment) using templates from [Reply Templates](references/reply-templates.md)
 5. **Resolve** the thread(s) via GitHub GraphQL API
 
-For deferred issues, reply with the deferral reason and resolve the thread — no code change or commit needed.
+For deferred issues, reply with the deferral reason and resolve the thread (no code change or commit needed).
 
-Skip issues the user selected "Ignore" — no reply, no resolve.
+Skip issues the user selected "Ignore": no reply, no resolve.
 
 **Step 3: Fix CI Checks**
 - Run lint --fix, formatters
@@ -303,7 +303,7 @@ Skip issues the user selected "Ignore" — no reply, no resolve.
   gh api repos/{owner}/{repo}/issues/comments/{qodo_comment_id}/reactions \
     -X POST -f content='+1'
   ```
-- If the reaction fails (comment not found, API error), continue — this is a nice-to-have, not critical.
+- If the reaction fails (comment not found, API error), continue; this is a nice-to-have, not critical.
 
 **Step 7: Fresh Verification**
 - Re-fetch PR data
@@ -335,7 +335,7 @@ For Qodo badge-to-severity mapping, see [Qodo Parsing Guide](references/qodo-par
 For detailed parsing instructions (API calls, HTML structure, badge detection, deduplication), see the [Qodo Parsing Guide](references/qodo-parsing.md). Read it during Phase 1 Step 2 when fetching and parsing comment data.
 
 **Key points:**
-- Qodo posts in **two locations** (general summary + inline comments) — fetch both
+- Qodo posts in **two locations** (general summary + inline comments): fetch both
 - Deduplicate by `file:line:title` before launching sub-agents
 - Extract Agent Prompt sections as primary fix guidance
 - Use Qodo reply format for responses (see [Reply Templates](references/reply-templates.md))
@@ -358,9 +358,9 @@ For detailed parsing instructions (API calls, HTML structure, badge detection, d
 
 → Phase 2: Presenting issues in Qodo's order...
    [displays issue table with severity annotations]
-→ Phase 2: AskUserQuestion — "How to handle HIGH issues? (fix/reply/defer/ignore)"
+→ Phase 2: AskUserQuestion: "How to handle HIGH issues? (fix/reply/defer/ignore)"
    User: "fix"
-→ Phase 2: AskUserQuestion — "How to handle MEDIUM issues? (fix/reply/defer/ignore)"
+→ Phase 2: AskUserQuestion: "How to handle MEDIUM issues? (fix/reply/defer/ignore)"
    User: "defer"
 
 → Phase 3: Fix #1 (HIGH) → commit → reply → resolve ✓
@@ -379,7 +379,7 @@ For detailed parsing instructions (API calls, HTML structure, badge detection, d
 
 → Checking Qodo review status... Still generating ("Looking for bugs?")
 → Setting up polling every 2 minutes...
-→ Cron job created. You can keep working — I'll notify you when the review is ready.
+→ Cron job created. You can keep working; I'll notify you when the review is ready.
 
   [2 minutes later - cron fires]
 → Polling... Qodo review still generating.
@@ -409,7 +409,7 @@ For detailed parsing instructions (API calls, HTML structure, badge detection, d
 ## Best Practices
 
 ### Analysis Phase
-- **One sub-agent per issue**: Each Qodo issue gets its own Agent(subagent_type="general-purpose") call — never analyze issues inline in the parent process
+- **One sub-agent per issue**: Each Qodo issue gets its own Agent(subagent_type="general-purpose") call; never analyze issues inline in the parent process
 - **Launch all at once**: Put all Agent tool calls in a single response so they run concurrently
 - **Pass full context**: Each sub-agent needs the raw HTML body, file path, line range, and comment IDs
 - **Severity first**: Classify before recommending action
@@ -417,7 +417,7 @@ For detailed parsing instructions (API calls, HTML structure, badge detection, d
 - **Include CI checks**: Analyze failing checks alongside comments
 
 ### Confirmation Phase
-- **Always use AskUserQuestion**: Never skip confirmation — this is a hard gate before Phase 3
+- **Always use AskUserQuestion**: Never skip confirmation: this is a hard gate before Phase 3
 - **Ask per severity group**: One AskUserQuestion for CRITICAL, one for HIGH, one for MEDIUM/LOW (can batch)
 - **Wait for each response**: Do not proceed to the next group until the user answers
 - **Present by severity**: Show CRITICAL first, LOW last
@@ -453,3 +453,7 @@ For detailed parsing instructions (API calls, HTML structure, badge detection, d
 - Verify: `gh pr checks` (all CI passing).
 
 See [Advanced Usage](references/advanced-usage.md) for complete workflow examples.
+
+## Memory
+
+State and learnings: follow `~/.claude/memory/AGENTS.md` if present, else `~/.claude/qodo-pr-resolver/`.

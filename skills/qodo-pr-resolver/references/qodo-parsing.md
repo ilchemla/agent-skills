@@ -20,7 +20,7 @@ gh api repos/{owner}/{repo}/issues/{pr_number}/comments | jq '[.[] |
 ]'
 ```
 
-**Inline Comments** (via Pulls API — filter out replies):
+**Inline Comments** (via Pulls API: filter out replies):
 ```bash
 gh api repos/{owner}/{repo}/pulls/{pr_number}/comments | jq '[.[] |
   select(.user.login == "qodo-code-review[bot]" or .user.login == "qodo-merge[bot]") |
@@ -49,7 +49,7 @@ General comments contain multiple issues in nested `<details>` blocks:
 
 ## Parsing Inline Comments
 
-Simpler structure — one issue per comment:
+Simpler structure: one issue per comment:
 
 - Metadata available: `.path`, `.line`, `.body`
 - Body structure is similar to a single general comment `<details>` block
@@ -74,7 +74,7 @@ Qodo provides ready-to-use fix prompts inside collapsible sections:
 </details>
 ```
 
-Extract these and use as primary fix guidance — they contain the issue description, context, and specific file:line locations to change.
+Extract these and use as primary fix guidance: they contain the issue description, context, and specific file:line locations to change.
 
 ## Severity Detection from Badges
 
