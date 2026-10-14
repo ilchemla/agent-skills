@@ -19,7 +19,7 @@ Do not announce the mode, do not say "in short" or "briefly", and do not apologi
 
 ## Prerequisites
 - Claude Code with AskUserQuestion (used for one-by-one questions).
-- Optional, for always-on mode only: a `UserPromptSubmit` hook in `~/.claude/settings.json` and this skill installed at `~/.claude/skills/tldr/` (see below).
+- Optional, for always-on mode only: a `UserPromptSubmit` hook in `~/.claude/settings.json` and this skill installed in Claude Code's personal skills folder (see below).
 
 ## Workflow
 Pick the mode from what the user said, run it (bottom line, explain, or one by one), and log a miss if they ask again.
@@ -66,6 +66,7 @@ If an answer opens a new question, add it to the end of the queue and update the
 
 ## Optional: always-on gentle mode
 The short rules in `${CLAUDE_SKILL_DIR}/gentle.md` can be injected into every prompt by a `UserPromptSubmit` hook, so Claude stays brief without being asked. It is off by default and needs a one-time hook in `~/.claude/settings.json`:
+<!-- fixed-format: hooks need an absolute install path -->
 ```json
 {
   "hooks": {
@@ -76,7 +77,9 @@ The short rules in `${CLAUDE_SKILL_DIR}/gentle.md` can be injected into every pr
   }
 }
 ```
-The path assumes this skill is installed at `~/.claude/skills/tldr/`. Merge into existing hooks rather than replacing them.
+The path assumes this skill is installed at `~/.claude/skills/tldr/`.
+<!-- /fixed-format -->
+Merge into existing hooks rather than replacing them.
 
 Personal rules (language, punctuation, tone) go in `~/.claude/tldr/preferences.md`, one bullet per rule. If `~/.claude/memory/AGENTS.md` exists, follow it instead: the rules live in the vault's `shared/preferences/writing.md` and the hook reads that file. The hook adds them after the shared rules, and they survive skill updates. Do not edit `gentle.md` itself.
 
