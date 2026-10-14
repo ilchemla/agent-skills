@@ -444,14 +444,12 @@ For detailed parsing instructions (API calls, HTML structure, badge detection, d
 - Test integration ensures changes don't break existing functionality
 - Fresh verification provides confidence that all work is complete
 
-## Integration with Other Skills
+## Related skills
 
-**Before:**
-- `/cleanup` - Clean up code before review
+**Before:** clean up and commit your work (your own cleanup or commit workflow, if you have one).
 
 **After:**
-- `/create-ticket` - Create tickets for deferred items
-- `/commit` - Additional commits if needed
-- Verify: `gh pr checks` - All CI passing
+- Track deferred items in your issue tracker.
+- Verify: `gh pr checks` (all CI passing).
 
 See [Advanced Usage](references/advanced-usage.md) for complete workflow examples.

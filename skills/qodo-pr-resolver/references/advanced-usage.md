@@ -112,59 +112,29 @@ gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
   --jq '.[10:20]'
 ```
 
-## Integration with Other Skills
+## Before and after
 
-### Before Running qodo-review
+### Before running qodo-review
 
-**1. Clean up code first:**
-```bash
-/cleanup
-```
+1. Clean up the code and make sure tests pass (`npm test` or your project's test command).
+2. Commit current work.
 
-**2. Ensure tests pass:**
-```bash
-npm test  # or appropriate test command
-```
+### After running qodo-review
 
-**3. Commit current work:**
-```bash
-/commit
-```
-
-### After Running qodo-review
-
-**1. Create tickets for deferred items:**
-```bash
-/create-ticket
-# Title: "Address deferred review comment #123"
-# Description: Copy from review comment
-```
-
-**2. Verify CI status:**
-```bash
-gh pr checks
-```
-
-**3. Request re-review:**
-```bash
-gh pr review --approve  # If self-review allowed
-# Or request reviewer to re-review
-```
+1. Track deferred review comments in your issue tracker (title: "Address deferred review comment #123").
+2. Verify CI: `gh pr checks`.
+3. Request a re-review from the reviewer.
 
 ### Complete Workflow Example
 
 ```bash
-# 1. Clean up code
-/cleanup
-
-# 2. Commit cleanup changes
-/commit
+# 1. Clean up and commit
+git commit -am "chore: cleanup before review"
 
 # 3. Handle review comments
 /qodo-review
 
-# 4. Create tickets for deferred work
-/create-ticket
+# 4. Track deferred work in your issue tracker
 
 # 5. Verify everything passes
 gh pr checks
