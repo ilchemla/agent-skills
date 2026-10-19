@@ -38,5 +38,11 @@ Pick on **evidence in the work**, not keywords. Each extra role must cover a dis
 | Diagram | intent-correctness, simplifier, visual-design, domain-expert |
 | Branded PDF / report | intent-correctness, simplifier, visual-design, fresh-reader, fact-checker |
 
+## Voices
+A voice is a saved, private profile of a real person (`voice.md`), run with the `voice` playbook. It sits outside the role cap, at most 2 per run.
+- **Add** a voice when the user names the person in this request ("add <name> to the panel", `+name`).
+- **Suggest, do not add,** when the work matches a saved voice's `use_when` or is addressed to that person but the user did not name them: one line in the announcement ("Voice available: <name> (roadmap is for them). Add with +name.").
+- **Remove** with `-name`.
+
 ## Learnings adjustments
 Check `<state>/learnings.md` (see SKILL.md, Where state lives). An optional role with no accepted findings in its last 5 runs on this work type can be skipped; say so in the announcement. Never auto-skip the always-on roles (`intent-correctness`, `simplifier`), and never auto-skip `security` or `skeptic` when their condition holds.

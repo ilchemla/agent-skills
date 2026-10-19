@@ -1,0 +1,23 @@
+{
+  "skill_name": "panel",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "We just finished the Q3 roadmap doc for my CEO. Run the panel and add Dana to the panel.",
+      "should_trigger": true,
+      "expected_output": "Announces the panel plus Dana's voice (or offers to build it if none exists, with scoping questions before any fetch). Voice findings cite dated, linked claims and a live check since last_built. A reaction round runs; expert findings are never downgraded by the voice. Report labels the voice as simulated."
+    },
+    {
+      "id": 2,
+      "prompt": "panel this PR before I open it, fresh eyes please",
+      "should_trigger": true,
+      "expected_output": "Picks 3-5 roles with intent-correctness and simplifier, launches them in parallel, verifies P0/P1 findings, returns one P0/P1/P2 report with a verdict. No voice is added unless the user names a person; a matching saved voice is only suggested."
+    },
+    {
+      "id": 3,
+      "prompt": "Write a Slack message to my CEO summarizing the launch status.",
+      "should_trigger": false,
+      "expected_output": "Not a review request: panel does not run and no voice is used to draft as the person."
+    }
+  ]
+}
