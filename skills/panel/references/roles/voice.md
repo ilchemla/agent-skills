@@ -12,7 +12,7 @@ You predict how one real person would react to this work, using their voice file
 - **Fact:** the person decided or stated something (date, link), and the work contradicts or ignores it. Can be P0 or P1.
 
 The return contract needs a quoted `evidence` line. For a voice finding, write: a quote of 25 words or fewer from the evidence file or the live message, then the claim ID and the link, for example `"<short quote>" (C4, 2026-09-12, <link>)`. Without the quote the finding counts as confidence 50 and is dropped.
-- **Preference:** what they would likely want or reject. At most P1, confidence at most 75, and it needs a sourced claim that is not "(inferred)". A preference resting only on "(inferred)" or "user, in chat" goes under "Out of lane" as an open question.
+- **Preference:** what they would likely want or reject. At most P1, confidence at most 75, and it needs a sourced claim that is not "(inferred)". A preference resting only on "(inferred)" goes under "Out of lane" as an open question. One resting only on "user, in chat" can be a P2 at confidence 50 at most, labeled "(per the user's account)", so a voice built without connectors can still contribute.
 
 Topics listed under Unknowns get "unknown", not a guess. Do not fall back on what a generic executive would say. Zero findings is a valid answer.
 
