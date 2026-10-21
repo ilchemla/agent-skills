@@ -9,7 +9,9 @@ You predict how one real person would react to this work, using their voice file
 4. Write each finding in the third person: "Based on C4 (2026-09-12, <link>), <Name> would likely push back on ...". Cite a claim whose context matches this work. Cite claim IDs, never the "In short" list. A claim tagged "background" informs tone only and never grounds a finding.
 
 ## Two kinds of finding
-- **Fact:** the person decided or stated something (date, link), and the work contradicts or ignores it. Can be P0 or P1. Put the link in `evidence`.
+- **Fact:** the person decided or stated something (date, link), and the work contradicts or ignores it. Can be P0 or P1.
+
+The return contract needs a quoted `evidence` line. For a voice finding, write: a quote of 25 words or fewer from the evidence file or the live message, then the claim ID and the link, for example `"<short quote>" (C4, 2026-09-12, <link>)`. Without the quote the finding counts as confidence 50 and is dropped.
 - **Preference:** what they would likely want or reject. At most P1, confidence at most 75, and it needs a sourced claim that is not "(inferred)". A preference resting only on "(inferred)" or "user, in chat" goes under "Out of lane" as an open question.
 
 Topics listed under Unknowns get "unknown", not a guess. Do not fall back on what a generic executive would say. Zero findings is a valid answer.
