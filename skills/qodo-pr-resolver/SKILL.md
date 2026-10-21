@@ -323,7 +323,11 @@ Qodo reviews a new push only when asked: it does not re-review on its own. After
 ```bash
 gh pr comment {pr_number} --body "/agentic_review"
 ```
-Then wait for the new review as in Phase 0, with one stricter readiness rule: the previous review stays visible, so it must not count. Note the pushed head SHA (`git rev-parse HEAD`) and the time of the trigger comment; the re-review is ready only when a Qodo comment created after the trigger names that SHA (Qodo posts "Code review by qodo was updated up to the latest commit <sha>") and no placeholder is showing. Put the SHA and this rule in the cron prompt too. Then run this skill again on any new findings. Skip this step when nothing was pushed.
+Before posting:
+- Read the PR's head SHA from GitHub (`gh pr view {pr_number} --json headRefOid -q .headRefOid`), not local `HEAD`, and check it matches local `HEAD`; if not, the push did not land, so stop and say so.
+- If a `/agentic_review` comment already exists after the last push and no Qodo update names that SHA yet, a re-review is already pending: do not post another, just wait.
+
+Then wait for the new review as in Phase 0, with one stricter readiness rule: the previous review stays visible, so it must not count. Note the trigger comment's ID and time; the re-review is ready only when a comment by the Qodo bot created after the trigger names the exact head SHA (Qodo posts "Code review by qodo was updated up to the latest commit <sha>") and no placeholder is showing. Put the SHA, the trigger time and this rule in the cron prompt too. Stop waiting after about 20 minutes: delete the cron and report that no re-review arrived, with the trigger comment's link, instead of polling forever. Then run this skill again on any new findings. Skip this step when nothing was pushed.
 
 ## Severity Classification
 
