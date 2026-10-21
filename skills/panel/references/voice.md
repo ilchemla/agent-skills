@@ -19,8 +19,8 @@ Only panel reads voices. This is a rule other skills follow, not a file permissi
 ## 2. Build a voice
 Triggers: "build a voice for X", "refresh X's voice", or "add X to the panel" when X has no voice yet.
 
-### Phase A: scope (nothing is fetched yet)
-Ask one question at a time with AskUserQuestion, recommended option first, pre-filled from what you already know. Skip any question the conversation already answered.
+### Phase A: scope (no message or meeting content is read yet)
+Ask one question at a time with AskUserQuestion, recommended option first, pre-filled from what you already know. Skip any question the conversation already answered. The only reads before the fetch plan is approved are lookups: who X is (user search, meeting participant lists) and how active X is per channel (message counts).
 1. **Who.** Resolve X with the Slack connector's user search and the meeting connector's participant lists, then confirm the match and ask X's relationship to the user (manager, exec, peer, customer, partner).
 2. **Where the voice will be used.** For example roadmaps and plans, exec updates, specs, customer messaging. Saved as `use_when`; Step 2 of SKILL.md uses it to suggest the voice.
 3. **What the user already knows.** Free text: what matters to X, feedback they keep giving, hard lines. Saved as claims sourced "user, in chat".
