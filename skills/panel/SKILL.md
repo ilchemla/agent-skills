@@ -108,7 +108,7 @@ As agents return (each returns a 3-line summary; full findings are in its file),
 2. **Verify every P0 and P1 yourself** against the artifact. Unconfirmable means drop it or demote it to P2 marked "unverified".
 3. If a P0 is contested and you cannot settle it from evidence, launch one `skeptic` on that finding only.
 4. Drop: confidence below 75 (except P0s you verified), pre-existing issues this work did not touch, linter-catchable nits, pure taste, and anything that reopens a settled decision. A concern that conflicts with a settled decision becomes an **open question** for the user, not a finding.
-5. **Voice findings** are about a person, not only the artifact. Verify a fact finding by opening its link and comparing it with the work. A preference finding is kept only if it cites a sourced claim that matches the work's context. A voice challenging a settled decision is never dropped: it goes first in the voice's section of the report as an open question.
+5. **Voice findings** are about a person, not only the artifact. Verify a fact finding by opening its link and comparing it with the work. A preference finding is kept only if it cites a sourced claim that matches the work's context. A voice challenging a settled decision is never dropped: it goes first in the voice's section of the report as an open question. Voice findings and reactions stay in the voice section only: the main table and the chat summary never name the person or carry their private links (a voice finding that also changes the work appears there as a plain requirement).
 
 ### Step 4b: Reaction round (only when a voice is on the panel)
 Send the voice the merged findings without the role names, and ask it to answer each one (agree, push back with a claim or link, or no reaction) and to add what the person would care about that the panel missed.
@@ -130,7 +130,7 @@ Panel: <roles> · <date>
 (only conflicts with settled decisions or real judgment calls)
 
 ## <Name>'s voice (simulated from N sources, last built <date>, live check: yes | no)
-(open questions first, then reactions to findings and what the panel missed)
+(open questions first, then the voice's findings, reactions to the panel's findings, and what the panel missed; the only part of the report that names the person or links their sources)
 
 ## What the panel did not check
 (merged "not checked" notes, skipped roles and why, failed reviewers, web fallback used)

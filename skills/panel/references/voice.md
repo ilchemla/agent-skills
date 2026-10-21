@@ -93,6 +93,6 @@ Every claim carries a context tag (a `use_when` work type, or "any"; "background
 
 ## 5. Rules
 - Voice content never goes into the artifact under review, a published artifact, Notion, Linear, Slack, PR text or commits. A fix taken from a voice finding is written as a plain requirement, with no attribution to the person.
-- A report with a voice section is not published or shared as is; remove the section first.
+- A report with a voice section is not published or shared as is; remove the section first. Since every voice-derived finding and link lives only in that section, removing it removes them all.
 - Never use a voice to draft messages as the person.
 - Never allowlist the connectors' write tools for this flow.
