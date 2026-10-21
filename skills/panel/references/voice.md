@@ -16,6 +16,8 @@ If `~/.claude/memory/AGENTS.md` exists, follow it: approved voices are `skills/p
 
 Only panel reads voices. This is a rule other skills follow, not a file permission, so keep the folder private.
 
+`<slug>` is the person's name lowercased, with only letters, digits and single hyphens (for example `dana-levi`). Never use a raw name in a path, and before writing or deleting, check that the resolved path stays inside the voices folder or `<drafts root>/panel/`.
+
 ## 2. Build a voice
 Triggers: "build a voice for X", "refresh X's voice", or "add X to the panel" when X has no voice yet.
 
