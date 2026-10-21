@@ -97,7 +97,7 @@ Create the report folder (`mkdir -p`) if Step 1 did not already. Fill `${CLAUDE_
 Each prompt is short and contains:
 1. "Read your playbook: `<absolute path to references/roles/<role>.md>`" and "Read the return contract: `<absolute path to references/return-contract.md>`".
 2. The filled brief (for `domain-expert`, also the domain string, e.g. "API design").
-3. The output file path: `<report folder>/<role>.md`.
+3. The output file path: `<report folder>/<role>.md` (for a voice, `<report folder>/voice-<slug>.md`, so two voices never share a file).
 4. For a voice only: the path to its voice file. Never put it in the shared brief, so other reviewers do not read it.
 
 Do not paste the session transcript. Do not restate the playbook. Prefer paths to inline content. If the session cannot write files (for example in plan mode), tell reviewers to return their full findings inline, in the return-contract format, instead of the 3-line summary. Steps 4 and 5 then work from those replies and the report is shown in chat only.
