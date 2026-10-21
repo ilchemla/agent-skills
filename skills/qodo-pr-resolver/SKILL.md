@@ -81,6 +81,7 @@ Qodo's review takes a few minutes to generate after a PR is opened. During this 
   ]'
   ```
 - **Review is ready** if: Qodo comments exist AND none contain the placeholder text ("Looking for bugs?" or "An AI review agent is analyzing")
+- **After a re-review trigger** (Phase 3, Step 8): use Step 8's stricter rule instead, so the previous review is not mistaken for the new one.
 - **Review is NOT ready** if: No Qodo comments exist, OR comments contain the placeholder text
 
 **Step 2: If Not Ready, Set Up Polling via `/loop`**
@@ -316,7 +317,7 @@ Qodo reviews a new push only when asked: it does not re-review on its own. After
 ```bash
 gh pr comment {pr_number} --body "/agentic_review"
 ```
-Then wait for the new review exactly as in Phase 0 (it shows the same placeholder while generating), and run this skill again on any new findings. Skip this step when nothing was pushed.
+Then wait for the new review as in Phase 0, with one stricter readiness rule: the previous review stays visible, so it must not count. Note the pushed head SHA (`git rev-parse HEAD`) and the time of the trigger comment; the re-review is ready only when a Qodo comment created after the trigger names that SHA (Qodo posts "Code review by qodo was updated up to the latest commit <sha>") and no placeholder is showing. Put the SHA and this rule in the cron prompt too. Then run this skill again on any new findings. Skip this step when nothing was pushed.
 
 **Step 9: Show PR URL**
 - Print the PR link so the user can navigate to it:
