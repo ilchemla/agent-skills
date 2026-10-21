@@ -113,9 +113,9 @@ Qodo's review takes a few minutes to generate after a PR is opened. During this 
 **Step 1: Detect PR Context (Parent Process)**
 - Get the current PR number and repo info:
   ```bash
-  gh pr view --json number,headRepositoryOwner,headRepository -q '{number: .number, owner: .headRepositoryOwner.login, repo: .headRepository.name}'
+  gh pr view --json number,url -q '{number: .number, url: .url, owner: (.url | split("/")[3]), repo: (.url | split("/")[4])}'
   ```
-- Store `pr_number`, `owner`, and `repo`: these are used in all subsequent API calls
+- Store `pr_number`, `pr_url`, `owner`, and `repo`: these are used in all subsequent API calls. They come from the PR's own URL, so they name the base repository even when the PR comes from a fork (the head repository's owner and name would point at the fork).
 
 **Step 2: Fetch and Deduplicate (Parent Process)**
 
@@ -315,7 +315,7 @@ Skip issues the user selected "Ignore": no reply, no resolve.
 **Step 8: Show PR URL**
 - Print the PR link now, before any polling can stop the skill:
   ```
-  PR: https://github.com/{owner}/{repo}/pull/{pr_number}
+  PR: {pr_url}
   ```
 
 **Step 9: Trigger Qodo's Re-review**
