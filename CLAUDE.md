@@ -37,7 +37,7 @@ description: >
 
 **qodo-pr-resolver**: Structured 3-phase workflow (Analyze → Confirm → Execute) for processing Qodo PR review comments with severity-based prioritization, multi-issue detection, and automatic thread resolution.
 
-**panel**: End-of-task review by 3-6 expert subagents picked for the work (code, docs, plans, messaging, slides, diagrams). Renders visual artifacts to images before review. Verifies findings, returns a P0/P1/P2 report with a ship / fix-first / rethink verdict, applies fixes only after approval. User state lives in `~/.claude/panel/`, never in the skill folder.
+**panel**: End-of-task review by 3-6 expert subagents picked for the work (code, docs, plans, messaging, slides, diagrams). Renders visual artifacts to images before review. Verifies findings, returns a P0/P1/P2 report with a ship / fix-first / rethink verdict, applies fixes only after approval. Can add a private "voice" of a real person, built from their own messages and meetings, that reacts to the other reviewers. User state and voices live in `~/.claude/panel/`, never in the skill folder.
 
 **tldr**: Bottom line of a long reply, plain-words explanations, and open questions one at a time. Optional always-on mode through a `UserPromptSubmit` hook (off by default). Learnings live in `~/.claude/tldr/`.
 
