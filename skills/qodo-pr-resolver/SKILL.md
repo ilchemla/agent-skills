@@ -66,7 +66,7 @@ git log @{u}..HEAD --oneline  # Check for unpushed commits
 ```
 
 - **Uncommitted changes exist**: Inform the user and ask if they want to commit and push first.
-- **Unpushed commits exist**: Inform the user that Qodo hasn't reviewed these yet. Ask if they want to push. If yes, push, trigger a re-review (Phase 3, Step 8), and wait for it as in Phase 0.
+- **Unpushed commits exist**: Inform the user that Qodo hasn't reviewed these yet. Ask if they want to push. If yes, push, trigger a re-review (Phase 3, Step 9), and wait for it as in Phase 0.
 - **Everything pushed**: Proceed to Phase 0.
 
 ### Phase 0: WAIT FOR REVIEW (Loop-based Polling)
@@ -81,7 +81,7 @@ Qodo's review takes a few minutes to generate after a PR is opened. During this 
   ]'
   ```
 - **Review is ready** if: Qodo comments exist AND none contain the placeholder text ("Looking for bugs?" or "An AI review agent is analyzing")
-- **After a re-review trigger** (Phase 3, Step 8): use Step 8's stricter rule instead, so the previous review is not mistaken for the new one.
+- **After a re-review trigger** (Phase 3, Step 9): use Step 9's stricter rule instead, so the previous review is not mistaken for the new one.
 - **Review is NOT ready** if: No Qodo comments exist, OR comments contain the placeholder text
 
 **Step 2: If Not Ready, Set Up Polling via `/loop`**
@@ -312,18 +312,18 @@ Skip issues the user selected "Ignore": no reply, no resolve.
 - Verify all CI checks passing
 - Provide completion summary
 
-**Step 8: Trigger Qodo's Re-review**
+**Step 8: Show PR URL**
+- Print the PR link now, before any polling can stop the skill:
+  ```
+  PR: https://github.com/{owner}/{repo}/pull/{pr_number}
+  ```
+
+**Step 9: Trigger Qodo's Re-review**
 Qodo reviews a new push only when asked: it does not re-review on its own. After the fixes are pushed and the threads resolved, post the trigger comment:
 ```bash
 gh pr comment {pr_number} --body "/agentic_review"
 ```
 Then wait for the new review as in Phase 0, with one stricter readiness rule: the previous review stays visible, so it must not count. Note the pushed head SHA (`git rev-parse HEAD`) and the time of the trigger comment; the re-review is ready only when a Qodo comment created after the trigger names that SHA (Qodo posts "Code review by qodo was updated up to the latest commit <sha>") and no placeholder is showing. Put the SHA and this rule in the cron prompt too. Then run this skill again on any new findings. Skip this step when nothing was pushed.
-
-**Step 9: Show PR URL**
-- Print the PR link so the user can navigate to it:
-  ```
-  PR: https://github.com/{owner}/{repo}/pull/{pr_number}
-  ```
 
 ## Severity Classification
 
