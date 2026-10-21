@@ -28,7 +28,7 @@ Ask one question at a time with AskUserQuestion, recommended option first, pre-f
 3. **What the user already knows.** Free text: what matters to X, feedback they keep giving, hard lines. Saved as claims sourced "user, in chat".
 4. **Fetch plan.** Propose it and wait for approval or edits: DMs between the user and X, the channels where X is most active (ranked by X's message count), meetings X attended, a 90-day window, and any documents the user names. When X is the user's manager or exec, also propose a 6-month read of the DM between them for how X leads (feedback, delegation, conflict, trust), not only priorities. Meeting search only lists the user's own recordings: ask for share links to meetings X owns and open them with the connector's share-link tool. Leave out external or shared-with-other-companies channels and meetings with external participants unless the user names them.
 
-If a connector is missing, say so and build from the user's own context only.
+If a connector is missing, say so and build from the user's own context only. Without any connector, the user confirms who X is in chat (full name and role); record `id: user-confirmed` in `sources` and skip Phase B.
 
 ### Phase B: fetch and distill
 **Map.** Launch one general-purpose subagent per source group (DMs, each top channel, meetings), all in one message. Each brief says:
