@@ -12,7 +12,7 @@ Build voices only of people you work with, to prepare your own work for them, an
 5. Rules
 
 ## 1. Where voices live
-If `~/.claude/memory/AGENTS.md` exists, follow it: voices are `skills/panel-voices/<slug>-voice.md` in the vault, raw evidence goes to the vault `inbox/`, and every write adds a log line. Otherwise voices are `~/.claude/panel/voices/<slug>.md` with evidence in `<slug>.evidence.md` next to it; on the first write there, warn the user once that this folder holds notes about real people and must stay out of dotfiles repos and cloud sync.
+If `~/.claude/memory/AGENTS.md` exists, follow it: approved voices are `skills/panel-voices/<slug>-voice.md` in the vault, their evidence goes to the vault `inbox/`, and every write adds a log line. Otherwise voices are `~/.claude/panel/voices/<slug>.md` with evidence in `<slug>.evidence.md` next to it; on the first write there, warn the user once that this folder holds notes about real people and must stay out of dotfiles repos and cloud sync.
 
 Only panel reads voices. This is a rule other skills follow, not a file permission, so keep the folder private.
 
@@ -41,12 +41,12 @@ If a connector is missing, say so and build from the user's own context only.
 
 **Reduce.** Merge the returned claims into the file shape (section 4). A claim seen in several sources becomes one claim with a higher count. Claims are paraphrased with a link; quotes stay in the evidence file, so the voice never becomes a collage of someone's private words. Mark anything you inferred "(inferred)". Write "unknown" rather than guessing.
 
-Write the draft to the drafts root (`<drafts root>/panel/<date>-<slug>-voice/`), not to the vault: nothing is saved before Phase C approval.
+Write the draft and the evidence file to the build folder (`<drafts root>/panel/<date>-<slug>-voice/`), not to the vault: nothing reaches permanent storage before Phase C approval.
 
 **Check.** Before showing the user, pick 3 claims (the strongest, the most surprising, one inferred) and re-read their evidence. Fix or drop any claim the evidence does not support.
 
 ### Phase C: review with the user
-Open the draft for the user to read (render it in the app's file pane or side panel) and show a short synthesis before saving: who this voice is, where it will be used, the top priorities, how they judge work, the strongest recurring feedback, what X is indifferent to, and the gaps. Name the 3 claims you checked so the user can spot-check them too. Ask about anything that looks off or thin. Apply one round of corrections, then save after the user approves.
+Open the draft for the user to read (render it in the app's file pane or side panel) and show a short synthesis before saving: who this voice is, where it will be used, the top priorities, how they judge work, the strongest recurring feedback, what X is indifferent to, and the gaps. Name the 3 claims you checked so the user can spot-check them too. Ask about anything that looks off or thin. Apply one round of corrections. On approval, move the voice and its evidence to their permanent places (section 1) and delete the build folder. If the user declines, delete the build folder.
 
 ## 3. Refresh, correct, forget
 - **Refresh:** rerun Phase B with a window starting at `last_built`. Add new dated claims. When a claim changes, keep the old one next to the new one so the change is visible. Update `last_built`.
