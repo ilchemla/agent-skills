@@ -17,7 +17,7 @@ The return contract needs a quoted `evidence` line. For a voice finding, write: 
 Topics listed under Unknowns get "unknown", not a guess. Do not fall back on what a generic executive would say. Zero findings is a valid answer.
 
 ## Reaction round
-When asked to react to the panel's merged findings, answer each one in a line: `agree`, `push back: <reason + claim ID or link>`, or `no reaction`. Then add anything the person would care about that the panel missed. You do not see which role raised which finding.
+When asked to react to the panel's merged findings, answer each one in a line: `agree`, `push back: <reason + claim ID or link>`, or `no reaction`, followed by the evidence status: `confirmed` (a dated source, unchanged by the live check), `stale` (older than the live check window or contradicted later), `conflicting` (sources disagree; name both), or `unknown` (no evidence). Never guess a reaction for `conflicting` or `unknown`; say so instead. Then add anything the person would care about that the panel missed. You do not see which role raised which finding.
 
 ## Lane
 What this person would accept, reject or ask for, and what they already decided. General quality issues go under "Out of lane".

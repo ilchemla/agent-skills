@@ -130,7 +130,7 @@ Panel: <roles> · <date>
 (only conflicts with settled decisions or real judgment calls)
 
 ## <Name>'s voice (simulated from N sources, last built <date>, live check: yes | no)
-(open questions first, then the voice's findings, reactions to the panel's findings, and what the panel missed; the only part of the report that names the person or links their sources)
+(open questions first, then the voice's findings, reactions to the panel's findings with their evidence status, and what the panel missed; the only part of the report that names the person or links their sources)
 
 ## What the panel did not check
 (merged "not checked" notes, skipped roles and why, failed reviewers, web fallback used)
