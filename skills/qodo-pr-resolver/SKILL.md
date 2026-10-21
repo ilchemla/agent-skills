@@ -66,7 +66,7 @@ git log @{u}..HEAD --oneline  # Check for unpushed commits
 ```
 
 - **Uncommitted changes exist**: Inform the user and ask if they want to commit and push first.
-- **Unpushed commits exist**: Inform the user that Qodo hasn't reviewed these yet. Ask if they want to push. If yes, push and tell them to wait ~5 minutes for Qodo to re-review, then re-run the skill.
+- **Unpushed commits exist**: Inform the user that Qodo hasn't reviewed these yet. Ask if they want to push. If yes, push, trigger a re-review (Phase 3, Step 9), and wait for it as in Phase 0.
 - **Everything pushed**: Proceed to Phase 0.
 
 ### Phase 0: WAIT FOR REVIEW (Loop-based Polling)
@@ -81,6 +81,7 @@ Qodo's review takes a few minutes to generate after a PR is opened. During this 
   ]'
   ```
 - **Review is ready** if: Qodo comments exist AND none contain the placeholder text ("Looking for bugs?" or "An AI review agent is analyzing")
+- **After a re-review trigger** (Phase 3, Step 9): use Step 9's stricter rule instead, so the previous review is not mistaken for the new one.
 - **Review is NOT ready** if: No Qodo comments exist, OR comments contain the placeholder text
 
 **Step 2: If Not Ready, Set Up Polling via `/loop`**
@@ -112,9 +113,9 @@ Qodo's review takes a few minutes to generate after a PR is opened. During this 
 **Step 1: Detect PR Context (Parent Process)**
 - Get the current PR number and repo info:
   ```bash
-  gh pr view --json number,headRepositoryOwner,headRepository -q '{number: .number, owner: .headRepositoryOwner.login, repo: .headRepository.name}'
+  gh pr view --json number,url -q '{number: .number, url: .url, owner: (.url | split("/")[3]), repo: (.url | split("/")[4])}'
   ```
-- Store `pr_number`, `owner`, and `repo`: these are used in all subsequent API calls
+- Store `pr_number`, `pr_url`, `owner`, and `repo`: these are used in all subsequent API calls. They come from the PR's own URL, so they name the base repository even when the PR comes from a fork (the head repository's owner and name would point at the fork).
 
 **Step 2: Fetch and Deduplicate (Parent Process)**
 
@@ -312,10 +313,21 @@ Skip issues the user selected "Ignore": no reply, no resolve.
 - Provide completion summary
 
 **Step 8: Show PR URL**
-- Print the PR link so the user can navigate to it:
+- Print the PR link now, before any polling can stop the skill:
   ```
-  PR: https://github.com/{owner}/{repo}/pull/{pr_number}
+  PR: {pr_url}
   ```
+
+**Step 9: Trigger Qodo's Re-review**
+Qodo reviews a new push only when asked: it does not re-review on its own. After the fixes are pushed and the threads resolved, post the trigger comment:
+```bash
+gh pr comment {pr_number} --body "/agentic_review"
+```
+Before posting:
+- Read the PR's head SHA from GitHub (`gh pr view {pr_number} --json headRefOid -q .headRefOid`), not local `HEAD`, and check it matches local `HEAD`; if not, the push did not land, so stop and say so.
+- If a `/agentic_review` comment already exists after the last push and no Qodo update names that SHA yet, a re-review is already pending: do not post another, just wait.
+
+Then wait for the new review as in Phase 0, with one stricter readiness rule: the previous review stays visible, so it must not count. Note the trigger comment's ID and time; the re-review is ready only when a comment by the Qodo bot created after the trigger names the exact head SHA (Qodo posts "Code review by qodo was updated up to the latest commit <sha>") and no placeholder is showing. Put the SHA, the trigger time and this rule in the cron prompt too. Stop waiting after about 20 minutes: delete the cron and report that no re-review arrived, with the trigger comment's link, instead of polling forever. Then run this skill again on any new findings. Skip this step when nothing was pushed.
 
 ## Severity Classification
 
@@ -369,6 +381,7 @@ For detailed parsing instructions (API calls, HTML structure, badge detection, d
 → Phase 3: Pushing all commits...
 → Phase 3: +1 reaction on Qodo's review comment ✓
 → Phase 3: Fresh verification: 0 unresolved ✓
+→ Phase 3: Posted /agentic_review, polling for the re-review...
 → Summary: 1 HIGH fixed, 1 MEDIUM deferred
 → PR: https://github.com/owner/repo/pull/123
 ```
