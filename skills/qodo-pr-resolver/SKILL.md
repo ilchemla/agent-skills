@@ -66,7 +66,7 @@ git log @{u}..HEAD --oneline  # Check for unpushed commits
 ```
 
 - **Uncommitted changes exist**: Inform the user and ask if they want to commit and push first.
-- **Unpushed commits exist**: Inform the user that Qodo hasn't reviewed these yet. Ask if they want to push. If yes, push and tell them to wait ~5 minutes for Qodo to re-review, then re-run the skill.
+- **Unpushed commits exist**: Inform the user that Qodo hasn't reviewed these yet. Ask if they want to push. If yes, push, trigger a re-review (Phase 3, Step 8), and wait for it as in Phase 0.
 - **Everything pushed**: Proceed to Phase 0.
 
 ### Phase 0: WAIT FOR REVIEW (Loop-based Polling)
@@ -311,7 +311,14 @@ Skip issues the user selected "Ignore": no reply, no resolve.
 - Verify all CI checks passing
 - Provide completion summary
 
-**Step 8: Show PR URL**
+**Step 8: Trigger Qodo's Re-review**
+Qodo reviews a new push only when asked: it does not re-review on its own. After the fixes are pushed and the threads resolved, post the trigger comment:
+```bash
+gh pr comment {pr_number} --body "/agentic_review"
+```
+Then wait for the new review exactly as in Phase 0 (it shows the same placeholder while generating), and run this skill again on any new findings. Skip this step when nothing was pushed.
+
+**Step 9: Show PR URL**
 - Print the PR link so the user can navigate to it:
   ```
   PR: https://github.com/{owner}/{repo}/pull/{pr_number}
@@ -369,6 +376,7 @@ For detailed parsing instructions (API calls, HTML structure, badge detection, d
 → Phase 3: Pushing all commits...
 → Phase 3: +1 reaction on Qodo's review comment ✓
 → Phase 3: Fresh verification: 0 unresolved ✓
+→ Phase 3: Posted /agentic_review, polling for the re-review...
 → Summary: 1 HIGH fixed, 1 MEDIUM deferred
 → PR: https://github.com/owner/repo/pull/123
 ```
