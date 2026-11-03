@@ -199,14 +199,15 @@ Agent(
   ## Issue Data
   - Title: <issue title>
   - File: <file path>
-  - Line(s): <line range>
+  - Line(s): <line range> at git_sha <git_sha> (PR head: <head_sha>)
   - Structured path: finding id, category, action_level, description, evidence.citations
     (and code_snippet / evidence.explanation if read with --extended)
   - Fallback path: raw HTML body and comment ID(s) (general and/or inline)
 
   ## Your Tasks
   1. Fallback path only: extract the Agent Prompt section from the HTML (look for <details><summary>Agent Prompt</summary> or <summary>Agent prompt</summary>)
-  2. Read the referenced file and lines, and each cited source, to understand the code context.
+  2. Read the referenced lines at that sha (`git show <git_sha>:<path>`); if it is not the head, find the
+     same code at head first. Read each cited source too, to understand the code context.
      The citations are Qodo's claim to test, not proof.
   3. Classify severity: structured path from category + action_level (see Severity Classification);
      fallback path from badges: ⛨ Security → CRITICAL, 🐞 Bug → HIGH, 📘 Rule → MEDIUM, 📎 Minor → LOW
