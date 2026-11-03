@@ -84,9 +84,9 @@ git log @{u}..HEAD --oneline  # Check for unpushed commits
 - **Unpushed commits exist**: Inform the user that Qodo hasn't reviewed these yet. Ask if they want to push. If yes, push, trigger a re-review (Phase 3, Step 9), and wait for it as in Phase 0.
 - **Everything pushed**: Proceed to Phase 0.
 
-**Checkout binding.** Before editing anything, check that this checkout is the PR you are fixing: the
-PR's `owner/repo` (from its URL) matches the local `origin` remote, and local `HEAD` equals the PR's
-`headRefOid`. If either differs, stop and say so rather than fixing a different tree.
+**Checkout binding.** Before editing, check this checkout is the PR: some remote (`git remote -v`) matches
+the PR's base repo or its head repo (`gh pr view --json headRepositoryOwner,headRepository`, for forks),
+and local `HEAD` equals the PR's `headRefOid`. If not, stop and say so rather than fixing a different tree.
 
 ### Phase 0: WAIT FOR REVIEW (Loop-based Polling)
 
