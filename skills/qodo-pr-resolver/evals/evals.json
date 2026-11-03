@@ -1,0 +1,29 @@
+{
+  "skill_name": "qodo-pr-resolver",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Qodo left findings on my PR, can you go through them and fix what's real?",
+      "should_trigger": true,
+      "expected_output": "Checks code is pushed and the checkout matches the PR head, picks the structured path when qodo CLI 2.0+ is logged in (says which path and why), confirms review_session is completed at the PR head, analyzes each open finding in a parallel subagent, asks one multi-select question with nothing pre-selected, fixes with one commit per finding, runs tests, and shows the exact dismiss / mark-implemented command before running it."
+    },
+    {
+      "id": 2,
+      "prompt": "I just pushed fixes for the Qodo comments on this PR. Close them out and get Qodo to look again.",
+      "should_trigger": true,
+      "expected_output": "Verifies the push landed (PR headRefOid equals local HEAD), records approved outcomes in Qodo in batched calls and checks per-finding results, prefers Qodo re-attribution over mark-implemented for fixes, posts /agentic_review only when no run at the new head exists, waits with a bounded poll, and prints the PR URL."
+    },
+    {
+      "id": 4,
+      "prompt": "Fix the Qodo findings on my PR. My qodo CLI is 1.x and I'm not logged in.",
+      "should_trigger": true,
+      "expected_output": "Takes the fallback path and says why (CLI older than 2.0, logged out), says upgrading needs the qodo:qodo-setup installer because qodo update stays within a major version, reads unresolved Qodo threads from GitHub comments per references/qodo-parsing.md, checks the review names the PR head, handles every sub-issue, and still confirms with the user before fixing."
+    },
+    {
+      "id": 3,
+      "prompt": "Review my teammate's PR and tell me if it's ready to merge.",
+      "should_trigger": false,
+      "expected_output": "Does not trigger: reviewing someone else's PR is a review task, not resolving Qodo findings on your own PR."
+    }
+  ]
+}

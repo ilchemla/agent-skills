@@ -2,6 +2,35 @@
 
 ## Common Issues and Solutions
 
+### Structured Read Fails
+
+**Symptoms:** `qodo read pr-review-session findings` errors, prints nothing, or the JSON does not parse.
+
+**Solutions:**
+1. `qodo --version` below 2.0.0: the skill falls back to GitHub comments. `qodo update` stays inside
+   a major version, so upgrading to 2.x needs Qodo's checksum-pinned installer (see the
+   `qodo:qodo-setup` skill). Do not call this a login problem.
+2. `qodo read whoami --json` fails: run `qodo login`.
+3. Garbled JSON: run from a directory outside the repo and send stderr to `/dev/null` (a trace line
+   is printed on stderr).
+4. The repo is not in your Qodo workspace: the read fails or returns no session; use the fallback path.
+5. `qar_operation_result_truncated` in the output: the result is incomplete. Report it; never treat it
+   as zero findings.
+
+### Review Looks Stale
+
+**Symptoms:** `review_session.commit_sha` differs from the PR's `headRefOid`.
+
+**Solution:** a push landed after the review. Do not fix from it: trigger a re-review (Phase 3,
+Step 9) and wait for a completed run at the head.
+
+### Outcome Not Recorded
+
+**Symptoms:** `dismiss` or `mark-implemented` returns, but a finding is still open.
+
+**Solution:** read the per-finding `results`: only open findings change, and an already-closed id
+returns its own outcome. Re-read the findings and report the ones that did not change.
+
 ### No Comments Found
 
 **Symptoms:**
