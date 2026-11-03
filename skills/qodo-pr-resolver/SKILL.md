@@ -332,7 +332,8 @@ review summary, so no GitHub replies are needed on this path.
 
 **Step 7: Fresh Verification**
 - Re-fetch the findings (structured path) or PR comments (fallback path)
-- Confirm zero open findings or unresolved threads beyond the ones the user chose to leave
+- Confirm zero open findings or unresolved threads beyond the ones the user chose to leave and fixed
+  findings awaiting Qodo's re-attribution (Step 9); list those as pending
 - Verify all CI checks passing
 - Provide completion summary
 
@@ -353,7 +354,7 @@ Before posting:
 
 Some repos review every push on their own: on the structured path, check first whether a run at the new head already started (`review_session.commit_sha` equals the new head) and skip the trigger if so.
 
-Then wait for the new review as in Phase 0. On the structured path the head-SHA rule already excludes the previous review. On the fallback path use one stricter readiness rule: the previous review stays visible, so it must not count. Note the trigger comment's ID and time; the re-review is ready only when a comment by the Qodo bot created after the trigger names the exact head SHA (Qodo posts "Code review by qodo was updated up to the latest commit <sha>") and no placeholder is showing. Put the SHA, the trigger time and this rule in the cron prompt too. On either path, stop waiting after about 20 minutes: delete the cron and report that no re-review arrived, with the trigger comment's link, instead of polling forever. Then run this skill again on any new findings. Skip this step when nothing was pushed.
+Then wait for the new review as in Phase 0. On the structured path the head-SHA rule already excludes the previous review. On the fallback path use one stricter readiness rule: the previous review stays visible, so it must not count. Note the trigger comment's ID and time; the re-review is ready only when a comment by the Qodo bot created after the trigger names the exact head SHA (Qodo posts "Code review by qodo was updated up to the latest commit <sha>") and no placeholder is showing. Put the SHA, the trigger time and this rule in the cron prompt too. On either path, stop waiting after about 20 minutes: delete the cron and report that no re-review arrived, with the trigger comment's link, instead of polling forever. Then confirm each fixed finding now shows `implemented`, and run this skill again on any new findings. Skip this step when nothing was pushed.
 
 ## Severity Classification
 
