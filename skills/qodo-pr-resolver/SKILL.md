@@ -264,9 +264,9 @@ AskUserQuestion(questions=[{
 }])
 ```
 
-Selected findings are fixed. For each one not selected, the outcome is the recommendation from its
-description (reply/dismiss, defer, or ignore); if the user wants a different outcome, they say so in
-the "Other" answer. Only after the answer, move to Phase 3.
+Selected findings are fixed. Each unselected finding gets the recommendation in its description; one
+recommended as fix is declined instead: defer it, record no outcome. For a different outcome, the user
+says so in the "Other" answer. Only after the answer, move to Phase 3.
 
 **Defaults when user says "go ahead" or similar:**
 - CRITICAL/HIGH: Apply fix
