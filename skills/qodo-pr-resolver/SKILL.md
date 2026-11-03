@@ -116,7 +116,7 @@ is analyzing this pull request" while it works, and replaces it once ready.
     select(.user.login == "qodo-code-review[bot]" or .user.login == "qodo-merge[bot]")
   ]'
   ```
-- **Review is ready** if: Qodo comments exist AND none contain the placeholder text ("Looking for bugs?" or "An AI review agent is analyzing")
+- **Review is ready** if: Qodo comments exist AND none contain the placeholder text ("Looking for bugs?" or "An AI review agent is analyzing") AND the latest Qodo review comment names the PR's `headRefOid` (full or short SHA). If it names an older SHA, the review is stale: trigger a re-review (Phase 3, Step 9)
 - **After a re-review trigger** (Phase 3, Step 9): use Step 9's stricter rule instead, so the previous review is not mistaken for the new one.
 - **Review is NOT ready** if: No Qodo comments exist, OR comments contain the placeholder text
 
@@ -129,7 +129,8 @@ is analyzing this pull request" while it works, and replaces it once ready.
    from outside the repo; ready when review_session.status is completed and commit_sha equals
    `gh pr view <actual_url> --json headRefOid -q .headRefOid`.
    Fallback path: fetch gh api repos/<actual_owner>/<actual_repo>/issues/<actual_number>/comments;
-   ready when Qodo's comment no longer contains 'Looking for bugs?' or 'An AI review agent is analyzing'.
+   ready when Qodo's comment no longer contains 'Looking for bugs?' or 'An AI review agent is analyzing'
+   and that comment names <actual_head_sha>.
    When ready: delete this cron job (CronDelete) and run /qodo-pr-resolver to process it.
    If still not ready, report status and wait for next poll."
   NOTE: Replace all placeholders with actual resolved values before creating the cron.
