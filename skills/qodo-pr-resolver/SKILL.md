@@ -116,7 +116,7 @@ is analyzing this pull request" while it works, and replaces it once ready.
     select(.user.login == "qodo-code-review[bot]" or .user.login == "qodo-merge[bot]")
   ]'
   ```
-- **Review is ready** if: Qodo comments exist AND none contain the placeholder text ("Looking for bugs?" or "An AI review agent is analyzing") AND the latest Qodo review comment names the PR's `headRefOid` (full or short SHA). If it names an older SHA, the review is stale: trigger a re-review (Phase 3, Step 9)
+- **Review is ready** if: Qodo comments exist AND none contain the placeholder text ("Looking for bugs?" or "An AI review agent is analyzing") AND the latest Qodo review comment names the PR's `headRefOid` (full or short SHA). If it names an older SHA, the review is stale: trigger a re-review (Phase 3, Step 9). If no Qodo comment names any SHA, say freshness cannot be confirmed and ask before going on
 - **After a re-review trigger** (Phase 3, Step 9): use Step 9's stricter rule instead, so the previous review is not mistaken for the new one.
 - **Review is NOT ready** if: No Qodo comments exist, OR comments contain the placeholder text
 
