@@ -132,6 +132,8 @@ is analyzing this pull request" while it works, and replaces it once ready.
    ready when Qodo's comment no longer contains 'Looking for bugs?' or 'An AI review agent is analyzing'
    and that comment names <actual_head_sha>.
    When ready: delete this cron job (CronDelete) and run /qodo-pr-resolver to process it.
+   Stop if review_session.status is failed, aborted, skipped or superseded, or 20 minutes have passed since
+   <actual_start_time> with no ready review at head: delete this cron (CronDelete), report the state and the PR link.
    If still not ready, report status and wait for next poll."
   NOTE: Replace all placeholders with actual resolved values before creating the cron.
   The cron fires in a fresh context with no memory of prior variables.
@@ -351,7 +353,7 @@ Before posting:
 
 Some repos review every push on their own: on the structured path, check first whether a run at the new head already started (`review_session.commit_sha` equals the new head) and skip the trigger if so.
 
-Then wait for the new review as in Phase 0. On the structured path the head-SHA rule already excludes the previous review. On the fallback path use one stricter readiness rule: the previous review stays visible, so it must not count. Note the trigger comment's ID and time; the re-review is ready only when a comment by the Qodo bot created after the trigger names the exact head SHA (Qodo posts "Code review by qodo was updated up to the latest commit <sha>") and no placeholder is showing. Put the SHA, the trigger time and this rule in the cron prompt too. Stop waiting after about 20 minutes: delete the cron and report that no re-review arrived, with the trigger comment's link, instead of polling forever. Then run this skill again on any new findings. Skip this step when nothing was pushed.
+Then wait for the new review as in Phase 0. On the structured path the head-SHA rule already excludes the previous review. On the fallback path use one stricter readiness rule: the previous review stays visible, so it must not count. Note the trigger comment's ID and time; the re-review is ready only when a comment by the Qodo bot created after the trigger names the exact head SHA (Qodo posts "Code review by qodo was updated up to the latest commit <sha>") and no placeholder is showing. Put the SHA, the trigger time and this rule in the cron prompt too. On either path, stop waiting after about 20 minutes: delete the cron and report that no re-review arrived, with the trigger comment's link, instead of polling forever. Then run this skill again on any new findings. Skip this step when nothing was pushed.
 
 ## Severity Classification
 
