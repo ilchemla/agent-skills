@@ -35,7 +35,7 @@ description: >
 
 ## Current Skills
 
-**qodo-pr-resolver**: Structured 3-phase workflow (Analyze → Confirm → Execute) for processing Qodo PR review comments with severity-based prioritization, multi-issue detection, and automatic thread resolution.
+**qodo-pr-resolver**: Wait, Analyze, Confirm, Execute workflow for Qodo PR review findings. Reads them as structured JSON through the Qodo CLI 2.0+ (falls back to GitHub comments), works only on a review at the PR head, fixes one commit per finding, and records outcomes in Qodo (`dismiss` / `mark-implemented`).
 
 **panel**: End-of-task review by 3-6 expert subagents picked for the work (code, docs, plans, messaging, slides, diagrams). Renders visual artifacts to images before review. Verifies findings, returns a P0/P1/P2 report with a ship / fix-first / rethink verdict, applies fixes only after approval. Can add a private "voice" of a real person, built from their own messages and meetings, that reacts to the other reviewers. User state and voices live in `~/.claude/panel/`, never in the skill folder.
 

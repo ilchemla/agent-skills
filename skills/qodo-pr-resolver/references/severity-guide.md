@@ -11,6 +11,17 @@ Comments are classified by severity to prioritize critical issues:
 | **MEDIUM** | performance, optimization, refactor, code smell, technical debt, maintainability | Recommended | Batch into single commit |
 | **LOW** | style, nit, formatting, typo, naming, whitespace, comment | Optional | Batch into single commit |
 
+### Structured findings (`action_level`)
+
+On the structured path, start from Qodo's own grade, then apply the keyword rules above to the
+`category` and description:
+
+| `action_level` | Default severity | Raise to CRITICAL when |
+|---|---|---|
+| `action_required` | HIGH | category or description is about security, auth, injection or data exposure |
+| `remediation_recommended` | MEDIUM | never raise more than one step without stating the evidence |
+| `informational` | LOW | (stays LOW unless the code shows real breakage) |
+
 **Processing Order**: CRITICAL → HIGH → MEDIUM → LOW
 
 ## Classification Algorithm

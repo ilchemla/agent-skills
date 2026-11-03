@@ -1,6 +1,8 @@
 # Qodo Comment Parsing Guide
 
-Reference for parsing Qodo PR Agent comments. Read this during Phase 1 (Analyze) when fetching and parsing comment data.
+Reference for parsing Qodo PR Agent comments on the **fallback path**: when the Qodo CLI is missing,
+older than 2.0, logged out, or the repo is not in your Qodo workspace. On the structured path, findings
+come from `qodo read pr-review-session findings` and none of this parsing is needed.
 
 ## Two Comment Types
 
