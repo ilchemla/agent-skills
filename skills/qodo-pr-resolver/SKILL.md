@@ -344,7 +344,7 @@ review summary, so no GitHub replies are needed on this path.
   ```
 
 **Step 9: Trigger Qodo's Re-review**
-Qodo reviews a new push only when asked: it does not re-review on its own. After the fixes are pushed and the threads resolved, post the trigger comment:
+Qodo often reviews a new push only when asked (some repos review every push automatically; see the check below). After the fixes are pushed and the threads resolved, post the trigger comment:
 ```bash
 gh pr comment {pr_number} --body "/agentic_review"
 ```
