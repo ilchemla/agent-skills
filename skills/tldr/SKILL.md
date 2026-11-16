@@ -58,9 +58,10 @@ They did not understand a term or idea.
 2. **Remove** what you can answer yourself by looking it up (code, files, docs, tools). Facts are your job; only decisions are theirs. Drop the ones that do not matter.
 3. **Order** so a question that depends on another comes after it. Most important first otherwise.
 4. Say it once, in one line: `4 decisions: A, B, C, D. Starting with A.`
-5. **Ask one per turn** with AskUserQuestion: 2-4 concrete options, the recommended one first labeled "(Recommended)", each description 10 words or fewer. Phrase it so picking the first option accepts your recommendation. If the question depends on a draft or text they must read, print it in chat first (the question box can hide long text).
-6. After each answer, one progress line, then the next question: `Q2 of 4 · settled: A = keep the deadline`.
-7. When done, a 3-line summary of what was decided, then act on it. Do not ask "anything else?".
+5. **Set the scene first.** Before each question, give one or two plain sentences on what the thing is and why it came up. Never use a term from a report, tool or earlier reply (a label, an ID, internal jargon) without explaining it. If they could not explain the question back to you, it is not ready.
+6. **Ask one per turn** with AskUserQuestion: 2-4 concrete options, the recommended one first labeled "(Recommended)", each description 10 words or fewer. Phrase it so picking the first option accepts your recommendation. If the question depends on a draft or text they must read, print it in chat first (the question box can hide long text).
+7. After each answer, one progress line, then the next question: `Q2 of 4 · settled: A = keep the deadline`.
+8. When done, a 3-line summary of what was decided, then act on it. Do not ask "anything else?".
 
 If an answer opens a new question, add it to the end of the queue and update the count.
 
