@@ -66,14 +66,18 @@ They did not understand a term or idea.
 If an answer opens a new question, add it to the end of the queue and update the count.
 
 ## Optional: always-on gentle mode
-The short rules in `${CLAUDE_SKILL_DIR}/gentle.md` can be injected into every prompt by a `UserPromptSubmit` hook, so Claude stays brief without being asked. It is off by default and needs a one-time hook in `~/.claude/settings.json`:
+The short rules in `${CLAUDE_SKILL_DIR}/gentle.md` can be injected by a hook, so Claude stays brief without being asked. `scripts/tldr-gentle.py` adds them once per session, and again after the context is compacted, cleared or resumed, rather than on every prompt (on every prompt they cost about 6% of a long session's tokens). It is off by default and needs a one-time hook in `~/.claude/settings.json`:
 <!-- fixed-format: hooks need an absolute install path -->
 ```json
 {
   "hooks": {
     "UserPromptSubmit": [
       { "hooks": [ { "type": "command",
-        "command": "[ -f ~/.claude/.tldr-gentle ] && cat ~/.claude/skills/tldr/gentle.md ~/.claude/tldr/preferences.md 2>/dev/null || true" } ] }
+        "command": "python3 ~/.claude/skills/tldr/scripts/tldr-gentle.py" } ] }
+    ],
+    "SessionStart": [
+      { "matcher": "compact|clear|resume", "hooks": [ { "type": "command",
+        "command": "python3 ~/.claude/skills/tldr/scripts/tldr-gentle.py" } ] }
     ]
   }
 }
@@ -85,7 +89,7 @@ Merge into existing hooks rather than replacing them.
 Personal rules (language, punctuation, tone) go in `~/.claude/tldr/preferences.md`, one bullet per rule. If `~/.claude/memory/AGENTS.md` exists, follow it instead: the rules live in the vault's `shared/preferences/writing.md` and the hook reads that file. The hook adds them after the shared rules, and they survive skill updates. Do not edit `gentle.md` itself.
 
 Toggles:
-- `/tldr on`: first check that `~/.claude/settings.json` contains `tldr-gentle`. If it does not, say the hook is missing, show the snippet above, and offer to add it. Only after the hook exists: `mkdir -p ~/.claude && touch ~/.claude/.tldr-gentle`, then reply `Gentle mode on. Takes effect on your next message.`
+- `/tldr on`: first check that `~/.claude/settings.json` contains `tldr-gentle`. If it does not, say the hook is missing, show the snippet above, and offer to add it. Only after the hook exists: `mkdir -p ~/.claude && touch ~/.claude/.tldr-gentle && rm -rf ~/.claude/.tldr-gentle-seen`, then reply `Gentle mode on. Takes effect on your next message.`
 - `/tldr off`: `rm -f ~/.claude/.tldr-gentle`, then reply `Gentle mode off.`
 
 ## Learn
