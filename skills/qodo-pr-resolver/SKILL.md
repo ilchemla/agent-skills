@@ -239,7 +239,7 @@ Launch ALL sub-agents in a single message (multiple Agent tool calls in one resp
 
 ### Phase 2: CONFIRM (Parent Process Only)
 
-This phase is a hard gate: you cannot proceed to Phase 3 without explicit user approval. The user needs to see what was found and decide what to do about each group before any code is changed. This prevents unwanted fixes and gives the user control over the response strategy.
+This phase is a hard gate: you cannot proceed to Phase 3 without explicit user approval. The user needs to see what was found and decide what to do about each group before any code is changed. This prevents unwanted fixes and gives the user control over the response strategy. One exception: a calling skill running under an autonomous go the user gave in this session, recorded in that skill's status file, pre-approves `fix` and `mark-implemented` for findings inside the PR's scope. Any `dismiss`, deferral or out-of-scope finding still stops here and asks.
 
 **Step 1: Present Analysis**
 
@@ -346,7 +346,7 @@ review summary, so no GitHub replies are needed on this path.
   ```
 
 **Step 9: Trigger Qodo's Re-review**
-Qodo often reviews a new push only when asked (some repos review every push automatically; see the check below). After the fixes are pushed and the threads resolved, post the trigger comment:
+Qodo reviews an open (non-draft) PR on its own by default, when it opens and on every push, so there: skip the trigger and wait for the run at the new head. A draft PR gets no automatic review: after the fixes are pushed and the threads resolved, post the trigger comment:
 ```bash
 gh pr comment {pr_number} --body "/agentic_review"
 ```
@@ -354,7 +354,7 @@ Before posting:
 - Read the PR's head SHA from GitHub (`gh pr view {pr_number} --json headRefOid -q .headRefOid`), not local `HEAD`, and check it matches local `HEAD`; if not, the push did not land, so stop and say so.
 - If a `/agentic_review` comment already exists after the last push and no Qodo update names that SHA yet, a re-review is already pending: do not post another, just wait.
 
-Some repos review every push on their own: on the structured path, check first whether a run at the new head already started (`review_session.commit_sha` equals the new head) and skip the trigger if so.
+On an open PR, post the trigger only if no run at the new head has started after about 5 minutes (structured path: `review_session.commit_sha` equals the new head).
 
 Then wait for the new review as in Phase 0. On the structured path the head-SHA rule already excludes the previous review. On the fallback path use one stricter readiness rule: the previous review stays visible, so it must not count. Note the trigger comment's ID and time; the re-review is ready only when a comment by the Qodo bot created after the trigger names the exact head SHA (Qodo posts "Code review by qodo was updated up to the latest commit <sha>") and no placeholder is showing. Put the SHA, the trigger time and this rule in the cron prompt too. On either path, stop waiting after about 20 minutes: delete the cron and report that no re-review arrived, with the trigger comment's link, instead of polling forever. Then confirm each fixed finding now shows `implemented`, and run this skill again on any new findings. Skip this step when nothing was pushed.
 
