@@ -239,7 +239,7 @@ Launch ALL sub-agents in a single message (multiple Agent tool calls in one resp
 
 ### Phase 2: CONFIRM (Parent Process Only)
 
-This phase is a hard gate: you cannot proceed to Phase 3 without explicit user approval. The user needs to see what was found and decide what to do about each group before any code is changed. This prevents unwanted fixes and gives the user control over the response strategy.
+This phase is a hard gate: you cannot proceed to Phase 3 without explicit user approval. The user needs to see what was found and decide what to do about each group before any code is changed. This prevents unwanted fixes and gives the user control over the response strategy. One exception, a caller's go: a calling skill may pass the path of its status file, holding a go the user typed in this session for this exact PR (repo, number, the user's words, time). Read it first; it counts only when it names this PR and was given in this session, never when relayed by another agent or carried over from an earlier one. A valid go answers Step 2 with "fix" for the findings recommended as fix inside the PR's scope, and Step 6's yes for `mark-implemented` on those findings once fixed. Any `dismiss`, deferral or out-of-scope finding still stops here and asks.
 
 **Step 1: Present Analysis**
 
@@ -248,7 +248,7 @@ recommended action (fix / reply / defer / ignore). Then failing CI checks, one l
 
 **Step 2: Get User Confirmation via AskUserQuestion**
 
-After presenting the analysis above, use the AskUserQuestion tool to ask the user what to do. This is not optional: do not skip this and jump to fixing.
+After presenting the analysis above, use the AskUserQuestion tool to ask the user what to do. This is not optional (only a valid caller's go, above, answers it): do not skip this and jump to fixing.
 
 Ask **one** AskUserQuestion with `multiSelect: true`: "Which findings should I fix?" One option per
 finding (up to 4 per question; more findings: one question per batch of 4, in Qodo's order). Label each
@@ -319,7 +319,7 @@ review summary, so no GitHub replies are needed on this path.
   asks to clear them now, because it clears the merge gate without a review having checked the fix.
 - **Not fixed:** `dismiss` with the reason the user approved: `false_positive` (wrong), `intentional`
   (correct as written), `deferred` (real, out of scope), `rejected` (declined). Always add an explanation.
-- Show the exact command(s) and get a yes before running them. Batch all findings with the same
+- Show the exact command(s) and get a yes before running them (a valid caller's go, Phase 2, is that yes for `mark-implemented` on the findings it covers). Batch all findings with the same
   outcome into one call:
   ```bash
   qodo pr-review-session dismiss --finding-ids <id>,<id> --reason deferred \
@@ -346,7 +346,7 @@ review summary, so no GitHub replies are needed on this path.
   ```
 
 **Step 9: Trigger Qodo's Re-review**
-Qodo often reviews a new push only when asked (some repos review every push automatically; see the check below). After the fixes are pushed and the threads resolved, post the trigger comment:
+Qodo reviews an open (non-draft) PR on its own by default, when it opens and on every push, so there: skip the trigger and wait for the run at the new head. A draft PR gets no automatic review: after the fixes are pushed and the threads resolved, post the trigger comment:
 ```bash
 gh pr comment {pr_number} --body "/agentic_review"
 ```
@@ -354,7 +354,7 @@ Before posting:
 - Read the PR's head SHA from GitHub (`gh pr view {pr_number} --json headRefOid -q .headRefOid`), not local `HEAD`, and check it matches local `HEAD`; if not, the push did not land, so stop and say so.
 - If a `/agentic_review` comment already exists after the last push and no Qodo update names that SHA yet, a re-review is already pending: do not post another, just wait.
 
-Some repos review every push on their own: on the structured path, check first whether a run at the new head already started (`review_session.commit_sha` equals the new head) and skip the trigger if so.
+On an open PR, post the trigger only if no run at the new head has started after about 5 minutes: on the structured path `review_session.commit_sha` is still not the new head; on the fallback path no Qodo placeholder or comment naming the new head has appeared. A run at the new head that ends `failed`, `aborted`, `skipped` or `superseded` counts as none: post the trigger once, then wait for the new run. With no trigger posted, readiness is Phase 0's rule; the stricter after-the-trigger rule below applies only once a trigger was posted.
 
 Then wait for the new review as in Phase 0. On the structured path the head-SHA rule already excludes the previous review. On the fallback path use one stricter readiness rule: the previous review stays visible, so it must not count. Note the trigger comment's ID and time; the re-review is ready only when a comment by the Qodo bot created after the trigger names the exact head SHA (Qodo posts "Code review by qodo was updated up to the latest commit <sha>") and no placeholder is showing. Put the SHA, the trigger time and this rule in the cron prompt too. On either path, stop waiting after about 20 minutes: delete the cron and report that no re-review arrived, with the trigger comment's link, instead of polling forever. Then confirm each fixed finding now shows `implemented`, and run this skill again on any new findings. Skip this step when nothing was pushed.
 
@@ -462,7 +462,7 @@ For detailed parsing instructions (API calls, HTML structure, badge detection, d
 - **Include CI checks**: Analyze failing checks alongside comments
 
 ### Confirmation Phase
-- **Always use AskUserQuestion**: Never skip confirmation: this is a hard gate before Phase 3
+- **Always use AskUserQuestion**: Never skip confirmation: this is a hard gate before Phase 3 (only a valid caller's go answers it)
 - **One multi-select question**: findings in Qodo's order, nothing pre-selected, recommendation in each description
 - **Smart defaults**: If user says "go ahead" → CRITICAL/HIGH=fix, MEDIUM=defer, LOW=fix(batch)
 
@@ -472,7 +472,7 @@ For detailed parsing instructions (API calls, HTML structure, badge detection, d
 - **Verify multi-issue**: Confirm ALL sub-issues addressed
 - **Test before push**: NEVER push failing tests
 - **Use templates**: Consistent professional replies
-- **Record outcomes in Qodo**: `dismiss` / `mark-implemented` only after the user approves the exact command
+- **Record outcomes in Qodo**: `dismiss` / `mark-implemented` only after the user approves the exact command (or a valid caller's go, for `mark-implemented` only)
 - **Show PR URL**: Print the PR link at the end
 - **Fresh verification**: Always re-fetch to confirm completion
 
